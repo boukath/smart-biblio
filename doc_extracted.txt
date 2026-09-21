@@ -1,0 +1,8559 @@
+BUILD A PREMIUM RFID + RFID-CARD LIBRARY MANAGEMENT SYSTEM
+
+1. YOUR ROLE
+
+You are acting as a senior software architect, senior full-stack developer, RFID integration engineer, UX/UI designer, database architect, QA engineer, and product engineer.
+
+Your task is to DESIGN AND BUILD a complete, production-quality Library Management System based around:
+
+Students / library members
+
+RFID student cards
+
+RFID-tagged books
+
+UHF RFID reader/writer
+
+Library catalog management
+
+Book borrowing
+
+Book returns
+
+Student authentication through RFID cards
+
+RFID book identification
+
+RFID card creation and assignment
+
+RFID tag writing and verification
+
+Library inventory
+
+Loan management
+
+Overdue management
+
+Fines
+
+Reports
+
+Administration
+
+Audit logs
+
+Multiple users/admin roles
+
+Premium self-service experience
+
+The hardware target is:
+
+FONGWAH U1-CU-71 UHF RFID Reader/Writer
+
+and the target SDK supplied with the project is:
+
+U1-CU-71 Reader SDK 20240912
+
+Do not invent SDK functions.
+
+Do not assume function names.
+
+Do not create a fake RFID integration and call it complete.
+
+First inspect the actual SDK files, documentation, DLLs, headers, sample projects, C#, Win32, Win64, VB, or other examples supplied with the project.
+
+The application must have a clean hardware abstraction layer so the rest of the software does not directly depend on vendor-specific SDK calls.
+
+2. PRODUCT VISION
+
+Build a modern library system that feels like a professional commercial product rather than a school project.
+
+The experience should be:
+
+extremely simple
+
+extremely fast
+
+visually premium
+
+bright
+
+clean
+
+modern
+
+intuitive
+
+reliable
+
+suitable for touchscreen use
+
+suitable for normal desktop monitors
+
+optimized for librarians and students
+
+designed specifically around RFID workflows
+
+The main concept is:
+
+Student arrives at library
+
+Student places/swipes RFID card near the reader.
+
+The system recognizes the student.
+
+The student sees a very simple interface:
+
+What would you like to do?
+
+[ BORROW BOOKS ]
+
+[ RETURN BOOKS ]
+
+Then the selected mode becomes:
+
+Ready to scan books
+
+The student puts one or more RFID-tagged books near the U1-CU-71.
+
+The system detects the RFID tags.
+
+The books immediately appear on screen.
+
+The system validates every book.
+
+For borrowing:
+
+Is the book available?
+
+Is the student allowed to borrow?
+
+Has the student reached the borrowing limit?
+
+Is the RFID tag valid?
+
+Is this copy already borrowed?
+
+Is the student blocked?
+
+Is the library open?
+
+Is the copy assigned to the correct library?
+
+Is the book lost, damaged, reserved, or unavailable?
+
+If valid:
+
+Book ready to borrow.
+
+Then the student confirms.
+
+The system creates the loan transaction.
+
+For returning:
+
+Identify the RFID book
+
+Find active loan
+
+Identify borrower
+
+Check overdue
+
+calculate fine if applicable
+
+mark the book returned
+
+update inventory
+
+update student's active loans
+
+store transaction history
+
+The entire process must feel almost instantaneous.
+
+3. IMPORTANT HARDWARE REQUIREMENT
+
+The U1-CU-71 must be treated as a real physical RFID reader/writer.
+
+Do not make the software dependent on keyboard emulation alone.
+
+The architecture must support two modes:
+
+MODE A — Native SDK / Read-Write Integration
+
+Use the actual vendor SDK when available.
+
+This mode is required for:
+
+controlled tag reading
+
+writing
+
+card assignment
+
+EPC operations
+
+configurable reader settings
+
+reader status
+
+multi-tag reading
+
+advanced operations
+
+MODE B — Keyboard Emulation Fallback
+
+The reader may also operate in keyboard-emulation mode.
+
+Implement this as a fallback/read-only compatibility layer where practical.
+
+However:
+
+Do not use keyboard emulation as the primary mechanism for RFID writing.
+
+The system architecture must clearly distinguish:
+
+Native UHF SDK
+
+    ↓
+
+RFID Hardware Adapter
+
+    ↓
+
+RFID Service
+
+    ↓
+
+Application
+
+and optionally:
+
+Keyboard Emulator
+
+    ↓
+
+Keyboard RFID Adapter
+
+    ↓
+
+RFID Service
+
+    ↓
+
+Application
+
+The application should not know whether the tag was obtained from the native SDK or the keyboard adapter.
+
+4. FIRST ACTION — INSPECT THE EXISTING PROJECT
+
+Before writing major code:
+
+Inspect the repository.
+
+Identify the existing framework.
+
+Identify frontend.
+
+Identify backend.
+
+Identify database.
+
+Identify authentication system.
+
+Identify existing design system.
+
+Identify operating system targets.
+
+Locate the U1-CU-71 SDK.
+
+Inspect the SDK version.
+
+Inspect all included DLLs.
+
+Inspect architecture:
+
+x86
+
+x64
+
+ARM
+
+Any CPU
+
+Inspect provided examples.
+
+Inspect documentation.
+
+Inspect exported functions.
+
+Inspect sample connection code.
+
+Inspect read commands.
+
+Inspect write commands.
+
+Inspect inventory/multi-tag functions.
+
+Inspect response/error structures.
+
+If the project is already using Flutter:
+
+Prefer a Flutter desktop architecture with a proper Windows/native integration layer rather than rewriting the whole application.
+
+If the existing project uses another framework:
+
+Keep the existing architecture unless there is a compelling technical reason to change it.
+
+Do not unnecessarily rewrite existing working modules.
+
+5. HARDWARE INTEGRATION ARCHITECTURE
+
+Create a dedicated RFID subsystem.
+
+Suggested architecture:
+
+RFID DOMAIN
+
+│
+
+├── RfidReaderService
+
+│
+
+├── RfidReaderManager
+
+│
+
+├── RfidDevice
+
+│
+
+├── RfidTag
+
+│
+
+├── RfidReadEvent
+
+│
+
+├── RfidWriteRequest
+
+│
+
+├── RfidWriteResult
+
+│
+
+├── RfidReaderStatus
+
+│
+
+├── RfidReaderConfiguration
+
+│
+
+├── RfidScanSession
+
+│
+
+├── RfidCommandQueue
+
+│
+
+├── RfidTagDeduplicator
+
+│
+
+├── NativeU1Cu71Adapter
+
+│
+
+└── KeyboardEmulationAdapter
+
+Never allow UI pages to directly call vendor DLL functions.
+
+The UI should call something like:
+
+rfidReader.startScanning()
+
+rfidReader.stopScanning()
+
+rfidReader.readTags()
+
+rfidReader.writeTag(...)
+
+rfidReader.verifyTag(...)
+
+rfidReader.getStatus()
+
+rfidReader.connect()
+
+rfidReader.disconnect()
+
+The exact implementation must come from the actual SDK.
+
+6. RFID DEVICE LIFECYCLE
+
+When the application starts:
+
+Detect connected RFID reader.
+
+Initialize native SDK if available.
+
+Detect communication mode.
+
+Detect device.
+
+Verify communication.
+
+Load reader configuration.
+
+Display connection status.
+
+The user should always know the status.
+
+Example:
+
+Reader connected
+
+A small status indicator:
+
+RFID ReaderConnected
+
+with a small green indicator.
+
+Reader disconnected
+
+RFID ReaderDisconnected
+
+with a red indicator.
+
+Connecting
+
+RFID ReaderConnecting...
+
+SDK unavailable
+
+RFID ReaderSDK unavailable
+
+Provide administrator diagnostics.
+
+Never silently fail.
+
+7. RFID READER SETTINGS
+
+Create an administrative RFID configuration page.
+
+Fields should be determined according to the actual SDK.
+
+Potential configuration:
+
+Reader name
+
+Device ID
+
+Connection type
+
+COM port if applicable
+
+USB mode
+
+Read mode
+
+Read power
+
+Write power
+
+Read duration
+
+Inventory interval
+
+Frequency settings if exposed by SDK
+
+Antenna settings if exposed
+
+Session
+
+Target
+
+Region
+
+Tag filtering
+
+Multi-tag mode
+
+EPC memory bank
+
+User memory bank if supported
+
+TID read
+
+Access password if supported
+
+Kill password should never be stored in plain text
+
+Write retry count
+
+Read verification
+
+Scan debounce interval
+
+Do not display SDK settings that the device does not actually support.
+
+Use capability detection.
+
+Example:
+
+Supported:
+
+✓ EPC reading
+
+✓ EPC writing
+
+✓ Multi-tag inventory
+
+✓ Adjustable power
+
+Not supported:
+
+— User memory
+
+8. RFID TAG DATA MODEL
+
+Treat the RFID tag ID as a physical identity.
+
+Important:
+
+Do not use the book title as the RFID identity.
+
+Do not use ISBN as the physical copy identity.
+
+One ISBN can represent thousands of physical copies.
+
+The correct hierarchy is:
+
+Book Title
+
+      ↓
+
+Book Edition
+
+      ↓
+
+Physical Copy
+
+      ↓
+
+RFID Tag
+
+Example:
+
+Book:
+
+Clean Code
+
+ISBN:
+
+9780132350884
+
+Copy:
+
+COPY-000134
+
+RFID:
+
+E28068940000501234567890
+
+The database should be the source of truth.
+
+The RFID tag should contain a stable physical identifier where supported.
+
+Never overwrite manufacturer-specific TID information.
+
+Do not assume that every tag supports arbitrary memory writing.
+
+Only write to supported memory banks according to the actual tag and SDK.
+
+9. RFID EPC STRATEGY
+
+Build an abstraction such as:
+
+RfidTagIdentity
+
+containing:
+
+EPC
+
+TID if available
+
+RSSI if available
+
+antenna/reader source if available
+
+timestamp
+
+tag memory data if available
+
+protocol
+
+raw data if needed for diagnostics
+
+Use EPC as the primary practical identifier when appropriate.
+
+Do not make the system dependent on TID.
+
+Store TID when available for diagnostics and anti-duplication purposes.
+
+10. TAG WRITE PROCEDURE
+
+Every RFID write operation must follow:
+
+Detect tag
+
+↓
+
+Lock scan session to one target tag
+
+↓
+
+Read current EPC/TID
+
+↓
+
+Display detected tag
+
+↓
+
+Validate target
+
+↓
+
+Write
+
+↓
+
+Read again
+
+↓
+
+Verify
+
+↓
+
+Confirm success
+
+↓
+
+Persist mapping
+
+Never display:
+
+Successfully written
+
+unless the read-back verification succeeded.
+
+On failure:
+
+Write failed
+
+The RFID tag was detected but the written value could not be verified.
+
+Provide:
+
+[Retry]
+
+[Cancel]
+
+[View Diagnostics]
+
+11. STUDENT / MEMBER RFID CARD SYSTEM
+
+The system must support RFID cards for:
+
+Students
+
+Teachers
+
+Staff
+
+Researchers
+
+External members
+
+Other library members
+
+Use a generic entity:
+
+LibraryMember
+
+with:
+
+memberType
+
+Values:
+
+Student
+
+Teacher
+
+Staff
+
+Researcher
+
+External
+
+Other
+
+12. MEMBER PROFILE
+
+Member fields:
+
+Identification
+
+Internal ID
+
+Member number
+
+Student number
+
+First name
+
+Last name
+
+Full name
+
+Gender if required by institution
+
+Date of birth if required
+
+National/reference identifier if required
+
+Photo
+
+Academic / organization
+
+Faculty
+
+Department
+
+Program
+
+Level/year
+
+Class/group
+
+Enrollment year
+
+Graduation year
+
+Academic status
+
+Contact
+
+Email
+
+Phone
+
+Address
+
+Emergency contact if required
+
+Library information
+
+Membership status
+
+Member type
+
+Registration date
+
+Expiration date
+
+Maximum active loans
+
+Current active loans
+
+Overdue count
+
+Outstanding fines
+
+Account blocked/unblocked
+
+RFID
+
+RFID card assigned
+
+EPC
+
+TID if available
+
+Card issue date
+
+Card status
+
+Card activation status
+
+Card expiration
+
+Last card scan
+
+13. CARD STATUS
+
+Possible status:
+
+Active
+
+Inactive
+
+Lost
+
+Stolen
+
+Expired
+
+Blocked
+
+Replaced
+
+Unassigned
+
+Never delete historical cards.
+
+When a student loses a card:
+
+Old card → LOST
+
+New card → ACTIVE
+
+Student history remains intact
+
+14. CREATE MEMBER + CREATE RFID CARD
+
+Admin flow:
+
+Members
+
+↓
+
+Create Member
+
+↓
+
+Enter details
+
+↓
+
+Save
+
+↓
+
+Assign RFID Card
+
+↓
+
+Place card on reader
+
+↓
+
+Scan
+
+↓
+
+Card detected
+
+↓
+
+Display EPC
+
+↓
+
+Write optional application-specific identifier
+
+↓
+
+Read back
+
+↓
+
+Verify
+
+↓
+
+Assign card
+
+The UI should make this incredibly simple.
+
+Example:
+
+┌────────────────────────────────────────────┐
+
+│ ASSIGN RFID CARD                           │
+
+│                                            │
+
+│ Student                                    │
+
+│ Ahmed Ben Ali                              │
+
+│ STU-2026-00154                             │
+
+│                                            │
+
+│ ┌────────────────────────────────────────┐ │
+
+│ │                                        │ │
+
+│ │       PLACE RFID CARD ON READER        │ │
+
+│ │                                        │ │
+
+│ │              ◉ ◉ ◉                     │ │
+
+│ │                                        │ │
+
+│ └────────────────────────────────────────┘ │
+
+│                                            │
+
+│ Waiting for card...                        │
+
+│                                            │
+
+│ [ Cancel ]                                 │
+
+└────────────────────────────────────────────┘
+
+After detection:
+
+RFID CARD DETECTED
+
+EPC:
+
+E280...
+
+TID:
+
+E200...
+
+Status:
+
+Unassigned
+
+[ASSIGN CARD]
+
+If already assigned:
+
+CARD ALREADY ASSIGNED
+
+Assigned to:
+
+Ahmed Ben Ali
+
+Member ID:
+
+STU-2026-00154
+
+Prevent accidental reassignment.
+
+Require administrator confirmation.
+
+15. STUDENT LOGIN EXPERIENCE
+
+The public/student screen must NOT show the normal administrator login.
+
+The normal experience should be:
+
+WELCOME TO THE LIBRARY
+
+Please tap your library card.
+
+[ RFID CARD ICON ]
+
+Waiting for card...
+
+When the student places the RFID card:
+
+Hello, Ahmed.
+
+What would you like to do?
+
+┌───────────────────┐
+
+│                   │
+
+│   BORROW BOOKS    │
+
+│                   │
+
+│   Take books      │
+
+│                   │
+
+└───────────────────┘
+
+┌───────────────────┐
+
+│                   │
+
+│   RETURN BOOKS    │
+
+│                   │
+
+│   Return books    │
+
+│                   │
+
+└───────────────────┘
+
+Also show:
+
+Active loans: 2
+
+Overdue: 0
+
+Do not overwhelm the student.
+
+The student interface must be extremely simple.
+
+16. ADMIN ACCESS MUST BE HIDDEN
+
+The public screen must NOT contain a normal:
+
+Admin Login
+
+button.
+
+Create a discreet administrative access mechanism.
+
+Use one or more of:
+
+hidden keyboard shortcut
+
+administrator gesture
+
+multiple clicks on logo
+
+small invisible hotspot
+
+configurable shortcut
+
+For example:
+
+Ctrl + Shift + A
+
+or clicking the library logo five times.
+
+This opens:
+
+ADMINISTRATOR ACCESS
+
+Username
+
+[____________]
+
+Password
+
+[____________]
+
+[ LOGIN ]
+
+The exact mechanism may be configurable.
+
+Do not rely on hiding the login as a security mechanism.
+
+The actual security must still use authentication and authorization.
+
+17. ADMIN LOGIN SECURITY
+
+Do not store passwords in plaintext.
+
+Use a secure password hashing mechanism such as:
+
+Argon2id
+
+bcrypt
+
+another appropriately configured password hashing system
+
+depending on the selected backend/framework.
+
+Implement:
+
+session timeout
+
+logout
+
+failed login handling
+
+rate limiting
+
+optional account lockout
+
+role permissions
+
+audit trail
+
+Record:
+
+successful login
+
+failed login
+
+logout
+
+account changes
+
+permission changes
+
+RFID writing
+
+member card assignment
+
+book RFID assignment
+
+deletion/archiving
+
+manual loan operations
+
+fine modifications
+
+18. ADMIN ROLES
+
+Create at minimum:
+
+Super Administrator
+
+Everything.
+
+Library Administrator
+
+Library configuration, members, books, loans, reports.
+
+Librarian
+
+Members, books, borrow/return, reservations, inventory.
+
+Operator
+
+Self-service support, basic RFID operations.
+
+Viewer / Auditor
+
+Read-only reports and history.
+
+Permission management must be granular.
+
+Example permissions:
+
+members.view
+
+members.create
+
+members.edit
+
+members.delete
+
+cards.read
+
+cards.write
+
+cards.assign
+
+cards.block
+
+books.view
+
+books.create
+
+books.edit
+
+books.archive
+
+rfid.read
+
+rfid.write
+
+rfid.configure
+
+loans.create
+
+loans.return
+
+loans.renew
+
+loans.override
+
+fines.view
+
+fines.modify
+
+reports.view
+
+reports.export
+
+settings.manage
+
+users.manage
+
+audit.view
+
+backup.manage
+
+19. ADMIN DASHBOARD
+
+Create a premium library administration dashboard.
+
+It should immediately communicate the state of the library.
+
+Top statistics:
+
+Total Books
+
+12,485
+
+Available
+
+9,874
+
+Currently Borrowed
+
+2,214
+
+Overdue
+
+397
+
+Additional:
+
+Members
+
+4,812
+
+Active Cards
+
+4,650
+
+RFID Tagged Books
+
+12,091
+
+Untagged Books
+
+394
+
+Today's Borrowings
+
+132
+
+Today's Returns
+
+109
+
+RFID status:
+
+RFID Reader
+
+CONNECTED
+
+Dashboard charts:
+
+Borrowings over time
+
+Returns over time
+
+Most borrowed categories
+
+Most active members
+
+Overdue trend
+
+Inventory status
+
+RFID tagging progress
+
+Use charts only where they communicate something useful.
+
+20. LIBRARY MANAGEMENT
+
+Implement a complete Library / Branch management system.
+
+A system may contain:
+
+Central Library
+
+Engineering Library
+
+Science Library
+
+Medical Library
+
+Faculty Library
+
+Campus Library
+
+Branch A
+
+Branch B
+
+Library fields:
+
+Library ID
+
+Code
+
+Name
+
+Description
+
+Logo
+
+Address
+
+City
+
+Wilaya
+
+Country
+
+Phone
+
+Email
+
+Website
+
+Opening hours
+
+Manager
+
+Status
+
+Default currency
+
+Default loan duration
+
+Default borrowing limit
+
+Default fine rules
+
+Created date
+
+Updated date
+
+For Algeria, support:
+
+Country: Algeria
+
+Currency: DZD
+
+Date format: DD/MM/YYYY
+
+Time: 24-hour
+
+Language:
+
+English
+
+French
+
+Do not hardcode currency values where configuration is more appropriate.
+
+21. LIBRARY STRUCTURE
+
+Support:
+
+Library
+
+    ↓
+
+Building
+
+    ↓
+
+Floor
+
+    ↓
+
+Section
+
+    ↓
+
+Room
+
+    ↓
+
+Shelf
+
+    ↓
+
+Shelf Position
+
+Example:
+
+Central Library
+
+→ Floor 2
+
+→ Computer Science
+
+→ Shelf CS-04
+
+→ Position 32
+
+This lets the librarian locate books physically.
+
+22. BOOK MANAGEMENT
+
+Do not make "Book" simply one row.
+
+Separate:
+
+Bibliographic record
+
+The title.
+
+and:
+
+Physical copy
+
+A real physical book.
+
+Example:
+
+TITLE
+
+Introduction to Algorithms
+
+ISBN
+
+9780262046305
+
+AUTHOR
+
+Thomas H. Cormen
+
+CATEGORY
+
+Computer Science
+
+COPIES
+
+15
+
+Each physical copy:
+
+Copy #1
+
+Accession: CS-00001
+
+RFID: E280...
+
+Shelf: CS-04
+
+Status: Available
+
+Copy #2
+
+Accession: CS-00002
+
+RFID: E280...
+
+Shelf: CS-04
+
+Status: Borrowed
+
+23. BOOK FIELDS
+
+Book title fields:
+
+Basic
+
+Book ID
+
+ISBN-10
+
+ISBN-13
+
+Title
+
+Subtitle
+
+Description
+
+Language
+
+Publication year
+
+Edition
+
+Volume
+
+Series
+
+Pages
+
+Authors
+
+Main author
+
+Multiple authors
+
+Contributors
+
+Editors
+
+Translators
+
+Publisher
+
+Publisher
+
+Publisher location
+
+Publication date
+
+Classification
+
+Category
+
+Subcategory
+
+Subject
+
+Keywords
+
+Tags
+
+Dewey Decimal Classification if desired
+
+Library of Congress classification if desired
+
+Custom call number
+
+Physical information
+
+Format
+
+Hardcover
+
+Paperback
+
+Reference
+
+Magazine
+
+Thesis
+
+Journal
+
+DVD/media if supported
+
+Library inventory
+
+Library
+
+Branch
+
+Building
+
+Floor
+
+Section
+
+Shelf
+
+Shelf position
+
+Commercial / acquisition
+
+Supplier
+
+Acquisition date
+
+Acquisition source
+
+Purchase price
+
+Invoice/reference
+
+Donation
+
+Funding source
+
+Media
+
+Cover image
+
+Additional images
+
+Documents
+
+24. PHYSICAL COPY FIELDS
+
+Each physical copy should have:
+
+Copy ID
+
+Accession number
+
+Book ID
+
+Copy number
+
+RFID EPC
+
+RFID TID
+
+RFID tag status
+
+Barcode if applicable
+
+Library
+
+Shelf
+
+Acquisition date
+
+Condition
+
+Status
+
+Current borrower
+
+Loan date
+
+Expected return date
+
+Last inventory scan
+
+Last RFID scan
+
+Status:
+
+Available
+
+Borrowed
+
+Reserved
+
+Overdue
+
+Lost
+
+Damaged
+
+Missing
+
+Under Repair
+
+Archived
+
+25. CREATE BOOK + ASSIGN RFID LABEL
+
+This is one of the most important workflows.
+
+Admin selects:
+
+Books
+
+→ Create Book
+
+Create bibliographic information first.
+
+Then:
+
+Physical Copies
+
+→ Add Copy
+
+Example:
+
+Book:
+
+Clean Code
+
+Copy:
+
+#001
+
+Accession:
+
+CC-000001
+
+Then:
+
+ASSIGN RFID
+
+The interface changes to:
+
+PLACE RFID LABEL ON READER
+
+Waiting for RFID tag...
+
+When the U1-CU-71 detects the label:
+
+RFID TAG DETECTED
+
+EPC
+
+E2806894...
+
+TID
+
+E200...
+
+Signal
+
+...
+
+[ WRITE TAG ]
+
+[ ASSIGN WITHOUT WRITING ]
+
+The system should support two approaches:
+
+Approach A — Keep factory EPC
+
+Use the existing EPC as the RFID identity.
+
+Approach B — Program a library-specific EPC
+
+If the tag supports writing and the actual SDK/tag configuration permits it, write an application-specific EPC.
+
+The configuration should determine which strategy is used.
+
+After writing:
+
+Read
+
+↓
+
+Write
+
+↓
+
+Read back
+
+↓
+
+Compare
+
+↓
+
+Verify
+
+Then:
+
+RFID ASSIGNED SUCCESSFULLY
+
+Book:
+
+Clean Code
+
+Copy:
+
+CC-000001
+
+RFID:
+
+E280...
+
+Status:
+
+Available
+
+26. DO NOT STORE TOO MUCH DATA ON THE RFID TAG
+
+Do not blindly write:
+
+Book title
+
+Author
+
+Description
+
+Student information
+
+Loan history
+
+into the tag.
+
+The tag should preferably identify the physical object.
+
+The database stores the business data.
+
+Recommended conceptual model:
+
+RFID TAG
+
+   ↓
+
+Physical Copy ID
+
+   ↓
+
+Book
+
+   ↓
+
+Library
+
+   ↓
+
+Business data
+
+This makes the system safer and easier to maintain.
+
+27. RFID SCANNING SCREEN
+
+Create a reusable RFID scan component.
+
+Example:
+
+┌─────────────────────────────────────────────────┐
+
+│ RFID SCANNER                                    │
+
+│                                                 │
+
+│       ◉                                         │
+
+│                                                 │
+
+│   Waiting for RFID tags                         │
+
+│                                                 │
+
+│   Reader: Connected                             │
+
+│                                                 │
+
+│   Detected: 0                                   │
+
+│                                                 │
+
+└─────────────────────────────────────────────────┘
+
+When tags are detected:
+
+Detected 3 tags
+
+┌─────────────────────────────────────────────────┐
+
+│ Clean Code                   Available          │
+
+│ Copy CC-001                    ✓                 │
+
+├─────────────────────────────────────────────────┤
+
+│ Database Systems             Available          │
+
+│ Copy DB-002                    ✓                 │
+
+├─────────────────────────────────────────────────┤
+
+│ Operating Systems            Borrowed          │
+
+│ Copy OS-009                    !                 │
+
+└─────────────────────────────────────────────────┘
+
+28. RFID SCAN DEDUPLICATION
+
+UHF readers can report the same physical tag repeatedly.
+
+Do NOT create multiple book entries from repeated reads.
+
+Implement:
+
+TagDebouncer
+
+Example:
+
+EPC A detected at:
+
+10:00:00.010
+
+10:00:00.120
+
+10:00:00.250
+
+10:00:00.600
+
+Treat it as:
+
+1 physical tag
+
+until the debounce/scan session rules determine otherwise.
+
+Make debounce configurable.
+
+29. MULTI-TAG SCANNING
+
+The U1-CU-71 supports multi-tag reading.
+
+Use this for:
+
+borrowing multiple books
+
+returning multiple books
+
+inventory
+
+RFID tagging audits
+
+shelf audits
+
+The system must process multiple tags efficiently.
+
+Example:
+
+5 tags detected
+
+4 valid books
+
+1 unknown RFID
+
+Show:
+
+4 books ready
+
+1 unknown RFID tag
+
+Do not block valid books simply because one tag is invalid.
+
+30. STUDENT BORROW WORKFLOW
+
+Student:
+
+Tap RFID card
+
+↓
+
+Student recognized
+
+↓
+
+Select BORROW BOOKS
+
+↓
+
+Reader starts book scanning
+
+↓
+
+Student presents books
+
+↓
+
+Books appear automatically
+
+↓
+
+System validates
+
+↓
+
+Student confirms
+
+↓
+
+Loan transaction created
+
+↓
+
+Success screen
+
+Example UI:
+
+BORROW BOOKS
+
+Hello Ahmed 👋
+
+Place your books near the scanner.
+
+3 books detected
+
+─────────────────────────
+
+Clean Code
+
+✓ Available
+
+Database Systems
+
+✓ Available
+
+Operating Systems
+
+✓ Available
+
+─────────────────────────
+
+3 books ready to borrow
+
+[ BORROW 3 BOOKS ]
+
+31. VALIDATION DURING BORROWING
+
+For every detected book:
+
+Check:
+
+RFID exists
+
+RFID is known
+
+Copy exists
+
+Copy belongs to this library
+
+Copy is available
+
+Copy is not lost
+
+Copy is not damaged
+
+Copy is not reserved for another member
+
+Student is active
+
+Student card is active
+
+Student is not blocked
+
+Student has no blocking overdue condition
+
+Student has not exceeded loan limit
+
+If a book cannot be borrowed:
+
+Operating Systems
+
+Cannot borrow
+
+Reason:
+
+Currently borrowed by another member
+
+Do not hide the reason.
+
+32. LOAN CONFIRMATION
+
+Before final transaction:
+
+CONFIRM BORROWING
+
+Student:
+
+Ahmed Ben Ali
+
+Books:
+
+3
+
+Borrowing date:
+
+21/09/2026
+
+Expected return:
+
+05/10/2026
+
+[ CANCEL ]
+
+[ CONFIRM BORROWING ]
+
+The actual due date should be calculated according to library rules.
+
+Do not hardcode 14 days.
+
+33. RETURN WORKFLOW
+
+Student:
+
+Tap RFID card
+
+↓
+
+Select RETURN BOOKS
+
+↓
+
+Reader scans books
+
+↓
+
+Books appear
+
+↓
+
+System finds active loans
+
+↓
+
+System calculates status
+
+↓
+
+Student confirms
+
+↓
+
+Books become available
+
+↓
+
+Transaction recorded
+
+Example:
+
+RETURN BOOKS
+
+Place books near scanner.
+
+2 books detected
+
+────────────────────────
+
+Clean Code
+
+✓ Borrowed by you
+
+Due: 01/10/2026
+
+Database Systems
+
+⚠ 5 days overdue
+
+Fine: 500 DZD
+
+────────────────────────
+
+[ RETURN 2 BOOKS ]
+
+Depending on configured policy, fines may be:
+
+only displayed
+
+automatically created
+
+require librarian approval
+
+require payment
+
+Do not assume one policy.
+
+Make it configurable.
+
+34. RETURN VALIDATION
+
+For each RFID:
+
+Check:
+
+Known RFID
+
+Known copy
+
+Has active loan
+
+Active loan corresponds to current student
+
+Book condition
+
+Overdue status
+
+Fine
+
+If someone attempts to return another student's book:
+
+This book is currently loaned to:
+
+Sarah Benali
+
+It is not registered to your account.
+
+Please contact the librarian.
+
+Do not silently return it unless the configured policy explicitly allows it.
+
+Admin/librarian override may be available.
+
+35. LOAN TRANSACTION MODEL
+
+Create a complete transaction entity.
+
+Fields:
+
+Loan ID
+
+Transaction number
+
+Member ID
+
+Copy ID
+
+RFID ID
+
+Library ID
+
+Borrowed at
+
+Due at
+
+Returned at
+
+Status
+
+Renewal count
+
+Fine amount
+
+Fine status
+
+Condition at borrow
+
+Condition at return
+
+Borrowing operator if manually assisted
+
+Return operator
+
+Source
+
+Device
+
+RFID reader ID
+
+Created at
+
+Updated at
+
+Source:
+
+Self Service
+
+Librarian
+
+Admin
+
+Import
+
+API
+
+36. LOAN STATES
+
+Use proper state transitions:
+
+Created
+
+→ Active
+
+→ Due Soon
+
+→ Overdue
+
+→ Returned
+
+Alternative:
+
+Active
+
+→ Lost
+
+and:
+
+Active
+
+→ Renewed
+
+→ Active
+
+Do not allow impossible state transitions.
+
+37. RESERVATIONS
+
+Add optional but recommended reservation functionality.
+
+Students may reserve a book.
+
+Reservation fields:
+
+Reservation ID
+
+Member
+
+Book
+
+Specific copy if applicable
+
+Created at
+
+Expiration
+
+Priority
+
+Status
+
+Statuses:
+
+Pending
+
+Ready
+
+Collected
+
+Cancelled
+
+Expired
+
+Completed
+
+38. RENEWAL
+
+Allow loan renewal according to configurable rules.
+
+Settings:
+
+Maximum renewals
+
+Renewal period
+
+Can renew overdue loans?
+
+Can renew reserved books?
+
+Can renew if fine exists?
+
+Example:
+
+Renewal #1
+
++14 days
+
+39. FINES
+
+Build a proper fine subsystem.
+
+Fine types:
+
+Overdue
+
+Lost Book
+
+Damaged Book
+
+Late Return
+
+Replacement
+
+Other
+
+Fields:
+
+Fine ID
+
+Member
+
+Loan
+
+Book
+
+Amount
+
+Currency
+
+Reason
+
+Created at
+
+Due date
+
+Paid amount
+
+Outstanding amount
+
+Status
+
+Payment reference
+
+Notes
+
+Created by
+
+Modified by
+
+Statuses:
+
+Pending
+
+Partially Paid
+
+Paid
+
+Waived
+
+Cancelled
+
+Currency:
+
+DZD
+
+unless configured differently.
+
+40. LIBRARY RULES ENGINE
+
+Do not hardcode borrowing rules into UI components.
+
+Create configuration such as:
+
+Loan Rules
+
+Example:
+
+Student:
+
+Maximum books: 5
+
+Loan period: 14 days
+
+Renewals: 2
+
+Fine per overdue day: 20 DZD
+
+Teacher:
+
+Maximum books: 10
+
+Loan period: 30 days
+
+Renewals: 3
+
+Staff:
+
+Maximum books: 7
+
+Loan period: 21 days
+
+Rules should be configurable per:
+
+library
+
+member type
+
+category
+
+book type
+
+41. INVENTORY MANAGEMENT
+
+Build RFID inventory scanning.
+
+Admin can choose:
+
+Inventory
+
+Then:
+
+Select Library
+
+Select Section
+
+Select Shelf
+
+Start Scan
+
+The reader scans all visible tags.
+
+Compare physical RFID tags against expected database inventory.
+
+Results:
+
+Expected:
+
+152
+
+Detected:
+
+148
+
+Missing:
+
+4
+
+Unexpected:
+
+3
+
+Duplicates:
+
+1
+
+42. INVENTORY RESULT TYPES
+
+Found
+
+RFID exists and is expected here.
+
+Missing
+
+Database expects it but reader did not detect it.
+
+Unexpected
+
+RFID exists but is not expected in this location.
+
+Unknown
+
+RFID exists physically but does not exist in database.
+
+Duplicate
+
+One RFID appears associated with multiple database records.
+
+Wrong Location
+
+Book exists but is assigned to another shelf/library.
+
+43. SHELF SCANNING
+
+Create a dedicated "Shelf Audit" mode.
+
+Example:
+
+SHELF AUDIT
+
+Library:
+
+Central Library
+
+Section:
+
+Computer Science
+
+Shelf:
+
+CS-04
+
+Expected:
+
+84 books
+
+Scanning...
+
+Detected:
+
+79
+
+Missing:
+
+5
+
+Unexpected:
+
+2
+
+At completion:
+
+[ VIEW DIFFERENCES ]
+
+[ SAVE AUDIT ]
+
+[ EXPORT REPORT ]
+
+44. UNKNOWN RFID TAG MANAGEMENT
+
+If the system detects an unknown RFID:
+
+UNKNOWN RFID TAG
+
+EPC:
+
+E280...
+
+No matching book found.
+
+Possible actions:
+
+[ CREATE BOOK COPY ]
+
+[ ASSIGN TO EXISTING BOOK ]
+
+[ IGNORE ]
+
+[ ADD TO UNREGISTERED INVENTORY ]
+
+Only administrators/librarians with permissions can assign unknown tags.
+
+45. DUPLICATE RFID PROTECTION
+
+An RFID should never normally be assigned to two copies.
+
+Before assigning:
+
+Search EPC
+
+If found:
+
+RFID ALREADY EXISTS
+
+Current assignment:
+
+Book: Clean Code
+
+Copy: CC-000124
+
+Library: Central Library
+
+Status: Borrowed
+
+Cannot assign this RFID to another copy.
+
+Require explicit administrator override only where technically justified.
+
+46. LOST RFID TAG REPLACEMENT
+
+Create:
+
+Replace RFID
+
+Workflow:
+
+Old RFID:
+
+E280...
+
+Status:
+
+Lost
+
+↓
+
+Scan new RFID
+
+↓
+
+Verify new tag
+
+↓
+
+Assign new RFID
+
+↓
+
+Old RFID:
+
+Retired
+
+New RFID:
+
+Active
+
+Preserve history.
+
+Never rewrite historical transaction records to make the replacement appear as the original.
+
+47. RFID CARD REPLACEMENT
+
+Same principle for student cards.
+
+Member:
+
+Ahmed Ben Ali
+
+Old card:
+
+E280...
+
+Status:
+
+Lost
+
+New card:
+
+E280...
+
+Status:
+
+Active
+
+History must remain intact.
+
+48. RFID DEVICE MANAGEMENT
+
+Create an admin page:
+
+Hardware
+
+→ RFID Readers
+
+Display:
+
+Reader:
+
+U1-CU-71
+
+Status:
+
+Connected
+
+SDK:
+
+Loaded
+
+Communication:
+
+USB
+
+Firmware:
+
+[if available]
+
+Reader mode:
+
+Native SDK
+
+Last heartbeat:
+
+2 seconds ago
+
+Actions:
+
+Reconnect
+
+Test Reader
+
+Test Read
+
+Test Write
+
+Configure
+
+View Diagnostics
+
+49. RFID DIAGNOSTICS
+
+Create a technical diagnostics screen for administrators.
+
+Display:
+
+Device detection
+
+SDK loading
+
+Connection
+
+Read command
+
+Write command
+
+Read-back verification
+
+Tag EPC
+
+Tag TID
+
+Signal / RSSI if supported
+
+Response time
+
+Error code
+
+Raw SDK response if appropriate
+
+Add a test:
+
+Reader Test
+
+STEP 1
+
+Reader detected ✓
+
+STEP 2
+
+SDK initialized ✓
+
+STEP 3
+
+Tag detection ✓
+
+STEP 4
+
+EPC read ✓
+
+STEP 5
+
+Write test skipped
+
+STEP 6
+
+Read-back ✓
+
+50. DO NOT BREAK THE APP IF RFID IS DISCONNECTED
+
+The software must remain usable even if the reader is disconnected.
+
+Administrator can still:
+
+create books
+
+create members
+
+search books
+
+view loans
+
+edit records
+
+generate reports
+
+RFID-specific operations should clearly show:
+
+RFID reader required.
+
+Please connect the U1-CU-71.
+
+Never crash the application.
+
+51. HOME SCREEN / KIOSK SCREEN
+
+The default screen should be designed like a professional self-service kiosk.
+
+Bright white interface.
+
+No dark theme.
+
+No dark sidebar.
+
+No black dashboard.
+
+No excessive gradients.
+
+Recommended style:
+
+Background:
+
+White / very light gray
+
+Primary:
+
+Premium blue
+
+Secondary:
+
+Sky blue
+
+Success:
+
+Soft green
+
+Warning:
+
+Warm amber
+
+Error:
+
+Soft red
+
+Text:
+
+Dark charcoal, not pure black
+
+Borders:
+
+Very light gray
+
+Cards:
+
+White with subtle shadows
+
+Use color sparingly.
+
+The interface should feel:
+
+Apple-like
+
+modern
+
+institutional
+
+premium
+
+trustworthy
+
+clean
+
+52. DESIGN SYSTEM
+
+Create a centralized design system.
+
+Components:
+
+Buttons
+
+Cards
+
+Tables
+
+Search fields
+
+Dropdowns
+
+Dialogs
+
+Side panels
+
+Toasts
+
+RFID scanner panels
+
+Status badges
+
+Empty states
+
+Loading states
+
+Error states
+
+Confirmation dialogs
+
+Date pickers
+
+RFID tag chips
+
+User avatars
+
+Book covers
+
+Metric cards
+
+Do not style every screen independently.
+
+53. ADMIN UI
+
+Admin interface:
+
+Dashboard
+
+Members
+
+Cards
+
+Books
+
+Catalog
+
+Loans
+
+Returns
+
+Reservations
+
+Inventory
+
+RFID
+
+Libraries
+
+Shelves
+
+Reports
+
+Fines
+
+Users & Roles
+
+Settings
+
+Audit Logs
+
+Backup
+
+Use a bright sidebar.
+
+The sidebar may be:
+
+white
+
+very light gray
+
+white with blue active item
+
+Never make the entire sidebar dark.
+
+54. ADMIN BOOK PAGE
+
+Build a professional data table.
+
+Columns:
+
+Cover
+
+Title
+
+ISBN
+
+Author
+
+Category
+
+Copies
+
+Available
+
+RFID
+
+Location
+
+Status
+
+Actions
+
+Filters:
+
+Search
+
+Library
+
+Category
+
+Author
+
+Status
+
+RFID status
+
+Shelf
+
+Availability
+
+Actions:
+
+View
+
+Edit
+
+Add Copy
+
+Assign RFID
+
+Move Copy
+
+Loan History
+
+Archive
+
+55. MEMBER PAGE
+
+Columns:
+
+Photo
+
+Member ID
+
+Name
+
+Type
+
+Department
+
+RFID Card
+
+Active Loans
+
+Overdue
+
+Fines
+
+Status
+
+Filters:
+
+name
+
+ID
+
+RFID
+
+department
+
+type
+
+status
+
+overdue
+
+56. MEMBER PROFILE PAGE
+
+Premium profile layout.
+
+Top:
+
+Ahmed Ben Ali
+
+STU-2026-00154
+
+Student
+
+Computer Science
+
+RFID:
+
+ACTIVE
+
+Account:
+
+ACTIVE
+
+Statistics:
+
+Active Loans
+
+2
+
+Total Borrowed
+
+47
+
+Overdue
+
+0
+
+Outstanding Fine
+
+0 DZD
+
+Tabs:
+
+Overview
+
+Loans
+
+Returns
+
+Reservations
+
+Fines
+
+RFID Card
+
+History
+
+57. STUDENT SELF-SERVICE HOME
+
+Keep extremely simple.
+
+Welcome
+
+Ahmed Ben Ali
+
+What would you like to do?
+
+Large buttons:
+
+BORROW BOOKS
+
+RETURN BOOKS
+
+Below:
+
+2 active loans
+
+No overdue books
+
+Optional:
+
+View My Loans
+
+But do not clutter the page.
+
+58. EMPTY STATES
+
+Never leave blank white areas.
+
+Instead:
+
+NO BOOKS SCANNED
+
+Place your books near the RFID reader.
+
+Waiting for RFID tags...
+
+Animation can be subtle.
+
+Do not use childish animations.
+
+59. RFID SCAN ANIMATION
+
+When waiting:
+
+subtle pulsing RFID icon
+
+small animated waves
+
+status text
+
+reader connection indicator
+
+Example:
+
+      ◉
+
+    ))) (((
+
+  )))     (((
+
+Waiting for RFID tag...
+
+Keep CPU usage low.
+
+60. SUCCESS SCREEN
+
+After borrowing:
+
+BORROWING COMPLETE
+
+✓ 3 books successfully borrowed
+
+Due date:
+
+05 October 2026
+
+Thank you, Ahmed.
+
+[ DONE ]
+
+After return:
+
+RETURN COMPLETE
+
+✓ 2 books returned
+
+Thank you.
+
+[ DONE ]
+
+Automatically return to card-waiting screen after a configurable delay.
+
+61. ERROR DESIGN
+
+Errors must be human-readable.
+
+Bad:
+
+Exception HRESULT 0x80004005
+
+Good:
+
+RFID READER CONNECTION FAILED
+
+The U1-CU-71 could not be reached.
+
+Check:
+
+• USB connection
+
+• Reader power
+
+• Reader mode
+
+• SDK installation
+
+[ RETRY ]
+
+[ VIEW DIAGNOSTICS ]
+
+Technical details may be available behind:
+
+Technical details
+
+62. NOTIFICATIONS
+
+Use premium toast notifications.
+
+Examples:
+
+✓ RFID card assigned
+
+✓ Book tagged successfully
+
+✓ Borrowing completed
+
+✓ Return completed
+
+Warnings:
+
+⚠ RFID already assigned
+
+⚠ Student borrowing limit reached
+
+⚠ Book is overdue
+
+Errors:
+
+× RFID write failed
+
+× Reader disconnected
+
+× Card is blocked
+
+63. SEARCH
+
+Global search should be extremely powerful.
+
+Search by:
+
+Book title
+
+ISBN
+
+Author
+
+RFID EPC
+
+Accession number
+
+Student name
+
+Student ID
+
+RFID card
+
+Loan number
+
+Fine ID
+
+Library
+
+Shelf
+
+Command-style search can optionally support:
+
+rfid:E280...
+
+student:STU-00152
+
+isbn:978...
+
+status:overdue
+
+64. REPORTS
+
+Create a full reports module.
+
+Reports:
+
+Library Overview
+
+total members
+
+total books
+
+total copies
+
+RFID coverage
+
+available books
+
+borrowed books
+
+overdue books
+
+Circulation
+
+daily borrowings
+
+daily returns
+
+monthly circulation
+
+yearly circulation
+
+Overdue
+
+overdue members
+
+overdue books
+
+days overdue
+
+estimated fines
+
+RFID
+
+tagged books
+
+untagged books
+
+invalid tags
+
+unknown tags
+
+duplicate tags
+
+RFID write failures
+
+RFID read failures
+
+Inventory
+
+missing books
+
+unexpected books
+
+wrong-location books
+
+shelf audit results
+
+Members
+
+active members
+
+inactive members
+
+most active members
+
+members with overdue books
+
+Fines
+
+outstanding
+
+paid
+
+waived
+
+overdue fines
+
+65. EXPORT
+
+Allow export to:
+
+PDF
+
+Excel
+
+CSV
+
+Reports should have professional formatting.
+
+Include:
+
+library logo
+
+library name
+
+report title
+
+generated date
+
+period
+
+filters
+
+totals
+
+signatures/approval areas if appropriate
+
+66. PDF REPORT STYLE
+
+No ugly raw data dumps.
+
+Create professional reports with:
+
+Library logo
+
+Library name
+
+Report title
+
+Date range
+
+Summary metrics
+
+Charts
+
+Detailed tables
+
+Footer
+
+Generated by Library Management System
+
+Use DZD where monetary amounts are displayed.
+
+67. AUDIT LOG
+
+Everything important should be auditable.
+
+Log:
+
+Timestamp
+
+User
+
+Role
+
+Action
+
+Entity
+
+Entity ID
+
+Old value
+
+New value
+
+IP/device if applicable
+
+Source
+
+Examples:
+
+21/09/2026 14:20
+
+Admin
+
+Assigned RFID
+
+Book Copy CC-0012
+
+EPC E280...
+
+21/09/2026 14:25
+
+Librarian
+
+Created loan
+
+Loan #LN-20260921-00124
+
+68. DATABASE DESIGN
+
+Create a normalized database.
+
+Suggested entities:
+
+users
+
+roles
+
+permissions
+
+user_roles
+
+role_permissions
+
+libraries
+
+library_locations
+
+buildings
+
+floors
+
+sections
+
+shelves
+
+members
+
+member_types
+
+member_statuses
+
+rfid_cards
+
+rfid_card_history
+
+authors
+
+publishers
+
+categories
+
+subjects
+
+books
+
+book_authors
+
+book_categories
+
+book_copies
+
+rfid_tags
+
+rfid_tag_history
+
+loans
+
+loan_items
+
+returns
+
+reservations
+
+fines
+
+fine_payments
+
+inventory_audits
+
+inventory_audit_items
+
+rfid_devices
+
+rfid_reader_logs
+
+notifications
+
+audit_logs
+
+settings
+
+loan_rules
+
+attachments
+
+reports
+
+Use foreign keys.
+
+Use indexes for:
+
+EPC
+
+TID
+
+ISBN
+
+member ID
+
+student ID
+
+accession number
+
+loan ID
+
+status
+
+library ID
+
+shelf ID
+
+RFID lookups must be fast.
+
+69. IMPORTANT DATABASE RULE
+
+RFID EPC must have a uniqueness rule when active.
+
+Example conceptual constraint:
+
+unique(active RFID EPC)
+
+Do not permit silent duplicates.
+
+70. TRANSACTION SAFETY
+
+Borrowing must be atomic.
+
+Suppose the student scans 4 books.
+
+Do not create:
+
+Book 1 loan ✓
+
+Book 2 loan ✓
+
+Book 3 loan ✓
+
+Book 4 database failure
+
+without handling the result.
+
+Use proper database transactions.
+
+Either:
+
+All valid books committed
+
+or:
+
+Partial transaction with explicit per-book result
+
+according to system design.
+
+Never silently leave inconsistent inventory.
+
+71. CONCURRENCY
+
+The system must handle two people attempting to borrow the same book.
+
+Example:
+
+Student A and Student B scan the same book nearly simultaneously.
+
+Only one transaction should succeed.
+
+Use proper:
+
+row locking
+
+optimistic concurrency
+
+transaction constraints
+
+status checks
+
+The second user should receive:
+
+BOOK NO LONGER AVAILABLE
+
+Another transaction has just borrowed this copy.
+
+72. OFFLINE / CONNECTIVITY
+
+If the architecture permits offline operation:
+
+Create controlled offline behavior.
+
+But be careful with duplicate loans.
+
+At minimum:
+
+cache library configuration
+
+keep UI operational
+
+queue non-destructive actions where safe
+
+mark unsynchronized records clearly
+
+Never pretend a transaction synchronized if it did not.
+
+73. LOCAL WINDOWS HARDWARE CONSIDERATION
+
+Because the U1-CU-71 is USB/native-SDK hardware, isolate device operations in a Windows-compatible native layer.
+
+Potential architecture:
+
+Flutter / Frontend
+
+        ↓
+
+Platform Channel / FFI
+
+        ↓
+
+Windows Native Integration
+
+        ↓
+
+FONGWAH SDK DLL
+
+        ↓
+
+U1-CU-71
+
+OR, if the existing stack is .NET:
+
+UI
+
+↓
+
+Application Services
+
+↓
+
+RFID Service
+
+↓
+
+FONGWAH DLL
+
+↓
+
+U1-CU-71
+
+Do not force a specific implementation if the existing repository already has a better architecture.
+
+74. SDK COMPATIBILITY
+
+When inspecting:
+
+U1-CU-71 Reader SDK 20240912
+
+look for:
+
+DLL files
+
+import libraries
+
+headers
+
+C# wrappers
+
+C# examples
+
+VB examples
+
+Win32 examples
+
+Win64 examples
+
+demo applications
+
+configuration utilities
+
+documentation
+
+protocol specifications
+
+error code definitions
+
+Determine:
+
+Architecture:
+
+x86 / x64
+
+Transport:
+
+USB / Serial
+
+Mode:
+
+Keyboard / Command
+
+Functions:
+
+Open
+
+Close
+
+Read
+
+Inventory
+
+Write
+
+Configure
+
+Only implement functions actually found in the SDK.
+
+75. CREATE AN RFID TEST HARNESS FIRST
+
+Before integrating RFID deeply into the library module, create a small internal hardware test screen.
+
+It should allow:
+
+Connect
+
+Disconnect
+
+Start Inventory
+
+Stop Inventory
+
+Read EPC
+
+Read TID
+
+Write EPC
+
+Read Back
+
+Set Power if supported
+
+Show raw results.
+
+This makes debugging dramatically easier.
+
+Do not hide hardware errors behind application abstractions until the hardware adapter is proven.
+
+76. HARDWARE LOGGING
+
+Create a controlled RFID diagnostic log.
+
+For example:
+
+15:02:10.122
+
+Reader connected
+
+15:02:11.018
+
+Inventory started
+
+15:02:11.204
+
+EPC detected:
+
+E280...
+
+15:02:12.820
+
+Write command sent
+
+15:02:12.913
+
+Write response received
+
+15:02:13.104
+
+Read-back successful
+
+Do not log passwords or sensitive credentials.
+
+Provide configurable log levels:
+
+Error
+
+Warning
+
+Info
+
+Debug
+
+Trace
+
+77. DEVICE ERROR HANDLING
+
+Handle:
+
+Reader disconnected
+
+USB unavailable
+
+COM unavailable
+
+SDK missing
+
+DLL architecture mismatch
+
+Permission error
+
+Busy reader
+
+Tag out of range
+
+Tag locked
+
+Tag password failure
+
+Unsupported tag memory
+
+Write timeout
+
+Read timeout
+
+Multiple tags detected
+
+Duplicate tag detected
+
+Unknown tag
+
+Each should produce a useful message.
+
+78. BOOK TAGGING BATCH MODE
+
+Create a powerful admin workflow:
+
+Batch RFID Tagging
+
+Example:
+
+Book:
+
+Database Systems
+
+Copies to tag:
+
+50
+
+Admin can process:
+
+Copy 001
+
+Waiting for tag...
+
+Scan
+
+Write
+
+Verify
+
+Copy 002
+
+Waiting...
+
+...
+
+Provide progress:
+
+17 / 50 completed
+
+34%
+
+Allow:
+
+Pause
+
+Resume
+
+Cancel
+
+Retry failed
+
+Skip
+
+At the end:
+
+Successfully tagged:
+
+48
+
+Failed:
+
+2
+
+Skipped:
+
+0
+
+Export failure report.
+
+79. CARD ISSUANCE BATCH MODE
+
+Likewise:
+
+Import students
+
+↓
+
+Create members
+
+↓
+
+Issue cards one by one
+
+Display:
+
+Student 12 of 80
+
+Ahmed Ben Ali
+
+Place card...
+
+Waiting...
+
+After assignment:
+
+✓ Card assigned
+
+Automatically advance.
+
+80. CARD IMPORT
+
+Support importing members from:
+
+Excel
+
+CSV
+
+Map fields:
+
+Student ID
+
+First Name
+
+Last Name
+
+Faculty
+
+Department
+
+Program
+
+Email
+
+Phone
+
+Show preview before import.
+
+Detect:
+
+duplicates
+
+invalid IDs
+
+missing required fields
+
+Never blindly import corrupted records.
+
+81. DATA VALIDATION
+
+Validate:
+
+ISBN
+
+Use correct ISBN checksum validation.
+
+Email
+
+Validate email format.
+
+Student ID
+
+Allow institution-specific configuration.
+
+RFID EPC
+
+Validate format appropriately.
+
+Do not reject a valid EPC merely because it does not match one hardcoded length unless the actual tag configuration requires it.
+
+82. BOOK COVER IMPORT
+
+Allow:
+
+upload image
+
+drag/drop
+
+optional external metadata lookup if implemented later
+
+crop/resize
+
+fallback placeholder
+
+Do not make an external API mandatory for creating books.
+
+83. NOTIFICATION CENTER
+
+Admin notification center:
+
+12 notifications
+
+Examples:
+
+8 overdue accounts
+
+3 unknown RFID tags
+
+1 RFID reader disconnected
+
+15 books need tagging
+
+Clicking notification opens the relevant page.
+
+84. DASHBOARD QUICK ACTIONS
+
+Provide:
+
+Add Book
+
+Register Member
+
+Issue RFID Card
+
+Tag Book
+
+Process Return
+
+Create Loan
+
+Start Inventory
+
+View Overdue
+
+These must be clearly visible.
+
+85. ADMIN "RFID CENTER"
+
+Create a dedicated RFID control center.
+
+Sections:
+
+Reader Status
+
+Card Issuing
+
+Book Tagging
+
+Inventory Scan
+
+Unknown Tags
+
+RFID Errors
+
+Device Diagnostics
+
+This becomes the main place for administrators to manage RFID.
+
+86. BOOK SEARCH FROM RFID
+
+If administrator scans a book RFID:
+
+Immediately open:
+
+Book Details
+
+with:
+
+Book
+
+Copy
+
+RFID
+
+Location
+
+Current status
+
+Current borrower
+
+Loan history
+
+Inventory history
+
+RFID history
+
+This should be extremely fast.
+
+87. STUDENT SEARCH FROM RFID
+
+If admin scans a student RFID card:
+
+Open:
+
+Member Profile
+
+Show:
+
+Member
+
+Card status
+
+Active loans
+
+Overdue
+
+Fines
+
+History
+
+88. SELF-SERVICE SAFETY
+
+Never show unnecessary private information.
+
+Student should not see:
+
+internal IDs
+
+database IDs
+
+admin notes
+
+audit information
+
+staff notes
+
+sensitive member information
+
+Only show what is needed.
+
+89. ACCESSIBILITY
+
+Support:
+
+large touch targets
+
+readable font sizes
+
+keyboard navigation
+
+high contrast
+
+color + text indicators
+
+screen scaling
+
+100%, 125%, 150% Windows scaling
+
+RTL-ready architecture if needed later, even if first language is English/French
+
+90. LANGUAGE SYSTEM
+
+Build proper internationalization.
+
+Primary languages:
+
+English
+
+French
+
+Do not hardcode UI strings inside widgets/components.
+
+Use:
+
+i18n / localization resources
+
+Examples:
+
+English:
+
+Borrow Books
+
+Return Books
+
+Waiting for RFID card...
+
+French:
+
+Emprunter des livres
+
+Retourner des livres
+
+En attente de la carte RFID...
+
+Every user-visible string must be localizable.
+
+91. LANGUAGE SWITCH
+
+Admin can configure:
+
+Default language:
+
+English
+
+Available:
+
+English
+
+Français
+
+Optional student screen language selector:
+
+EN | FR
+
+Keep it subtle.
+
+92. DATES AND MONEY
+
+For Algerian deployment:
+
+Default:
+
+Currency:
+
+DZD
+
+Date:
+
+DD/MM/YYYY
+
+Time:
+
+24-hour
+
+Do not hardcode formatting throughout the application.
+
+Use centralized locale configuration.
+
+93. BACKUP AND RESTORE
+
+Admin:
+
+Settings
+
+→ Backup & Restore
+
+Options:
+
+Create Backup
+
+Restore Backup
+
+Automatic Backup
+
+Backup Location
+
+Backup History
+
+Warn before restore.
+
+Require administrator authorization.
+
+94. SOFT DELETE
+
+Do not permanently delete important library history.
+
+For:
+
+books
+
+members
+
+RFID cards
+
+loan records
+
+fine records
+
+prefer:
+
+Archived
+
+Inactive
+
+Retired
+
+rather than hard delete.
+
+Loan history must remain intact.
+
+95. REPORTING HISTORY
+
+Never change an old loan when a correction is made.
+
+Create:
+
+Correction / Adjustment
+
+and audit who made it.
+
+Historical data must remain trustworthy.
+
+96. PERFORMANCE
+
+The application must feel instant.
+
+Target:
+
+Dashboard opens quickly
+
+Book search responds immediately
+
+RFID detection appears within practical reader latency
+
+UI never freezes during scanning
+
+Writing happens off the UI thread
+
+Database operations are asynchronous
+
+Large inventories must use pagination/virtualized lists
+
+Do not load 50,000 books into memory unnecessarily
+
+97. RFID SCAN THREADING
+
+RFID inventory must NOT freeze the UI.
+
+Use:
+
+RFID thread/service
+
+      ↓
+
+Event stream
+
+      ↓
+
+Debouncer
+
+      ↓
+
+Application state
+
+      ↓
+
+UI
+
+Provide cancellation.
+
+When screen closes:
+
+stop scan
+
+dispose session
+
+release reader
+
+Do not leave background readers active unintentionally.
+
+98. STATE MANAGEMENT
+
+Avoid scattered global state.
+
+Use a predictable architecture.
+
+Separate:
+
+UI
+
+Application State
+
+Domain Logic
+
+Repositories
+
+Hardware Services
+
+Database
+
+RFID should not be directly tied to a page's lifecycle.
+
+99. DESIGN FOR REAL HARDWARE
+
+Assume the real device behaves imperfectly.
+
+The software must handle:
+
+Reader connected late
+
+Reader disconnected suddenly
+
+Reader reconnects
+
+Tag moves rapidly
+
+Multiple tags overlap
+
+Same tag detected repeatedly
+
+Book removed from reader
+
+Tag write fails
+
+Tag write succeeds but verification fails
+
+User walks away
+
+User scans wrong RFID
+
+Two users approach quickly
+
+Do not only design for the happy path.
+
+100. STUDENT SESSION TIMEOUT
+
+After successful RFID card authentication:
+
+Start a session.
+
+Example:
+
+Student session:
+
+5 minutes
+
+If the student walks away:
+
+Session expired.
+
+Please scan your card again.
+
+Do not allow the next student to inherit the previous student's session.
+
+101. AUTOMATIC RESET
+
+After transaction completion:
+
+Transaction complete
+
+↓
+
+Show success
+
+↓
+
+Reset
+
+↓
+
+Waiting for next card
+
+Never remain logged in as the previous student.
+
+102. "CANCEL" EVERYTHING
+
+Every major workflow must support cancellation:
+
+card assignment
+
+book tagging
+
+borrowing
+
+returning
+
+inventory
+
+batch operations
+
+RFID write
+
+Cancellation must properly stop:
+
+scan sessions
+
+background tasks
+
+pending dialogs
+
+hardware commands where possible
+
+103. CONFIRMATION POLICY
+
+Do not overuse confirmations.
+
+Confirm destructive/high-impact actions:
+
+deleting/archiving
+
+changing RFID assignment
+
+replacing card
+
+changing RFID
+
+cancelling a loan
+
+waiving a fine
+
+restoring backup
+
+Do not force confirmations for harmless actions.
+
+104. EMPTY DATA STATES
+
+Every list must have meaningful empty states.
+
+Example:
+
+NO OVERDUE BOOKS
+
+Excellent — there are currently no overdue loans.
+
+For RFID:
+
+NO RFID TAG DETECTED
+
+Place the RFID label near the reader.
+
+For books:
+
+NO BOOKS FOUND
+
+Try another search or add a new book.
+
+105. LOADING STATES
+
+Never display frozen pages.
+
+Use:
+
+Loading books...
+
+Loading member...
+
+Connecting to RFID reader...
+
+Scanning RFID tags...
+
+Writing RFID tag...
+
+Verifying RFID tag...
+
+Generating report...
+
+106. SECURITY MODEL
+
+Implement:
+
+Authentication
+
+Authorization
+
+Role-based permissions
+
+Password hashing
+
+Session management
+
+Audit logging
+
+Input validation
+
+SQL injection protection
+
+Parameterized queries
+
+Secure file handling
+
+Rate limiting
+
+RFID write permissions
+
+Backup protection
+
+Only privileged users should be able to write RFID tags.
+
+Student self-service should be read-only with respect to RFID hardware.
+
+Students must NEVER be allowed to:
+
+rewrite card identity
+
+write book tags
+
+change member information
+
+modify loans
+
+modify fines
+
+107. ADMIN OVERRIDE
+
+For exceptional situations, provide:
+
+Override
+
+But require:
+
+reason
+
+authorized user
+
+audit log
+
+Example:
+
+BORROWING LIMIT EXCEEDED
+
+Override required.
+
+Reason:
+
+Faculty professor authorization
+
+[ AUTHORIZE OVERRIDE ]
+
+Record everything.
+
+108. MANUAL MODE
+
+RFID should be primary, but librarians must have a manual workflow.
+
+Example:
+
+Manual Borrow
+
+Manual Return
+
+Manual Member Card Assignment
+
+Manual RFID Assignment
+
+Require permissions.
+
+This is essential when:
+
+RFID reader fails
+
+card is damaged
+
+tag is damaged
+
+book RFID is missing
+
+109. BARCODE/ALTERNATIVE IDENTIFICATION
+
+Architect the system so future devices can be added:
+
+RFID
+
+Barcode
+
+QR Code
+
+NFC
+
+Manual
+
+Do not build the entire business model around one specific physical reader.
+
+110. MULTIPLE RFID READERS
+
+Design for future support of:
+
+Reader 1:
+
+Self-Service Kiosk
+
+Reader 2:
+
+Admin Desk
+
+Reader 3:
+
+Inventory
+
+Reader 4:
+
+Tagging Station
+
+Each reader should have:
+
+ID
+
+Name
+
+Location
+
+Purpose
+
+Status
+
+Connection
+
+Configuration
+
+The app should know which reader is assigned to which workflow.
+
+111. READER LOCKING
+
+Do not let two workflows use the same reader simultaneously.
+
+For example:
+
+Reader:
+
+U1-CU-71 #01
+
+Current owner:
+
+Book Tagging
+
+Status:
+
+Busy
+
+Another screen should receive:
+
+RFID reader currently in use.
+
+Release the lock safely after cancellation/disconnect.
+
+112. BOOK TAGGING STATION
+
+Allow configuring a workstation as:
+
+RFID TAGGING STATION
+
+When launched, it goes directly to:
+
+Scan → Write → Verify
+
+This avoids unnecessary navigation for librarians working through hundreds of books.
+
+113. SELF-SERVICE KIOSK MODE
+
+Allow configuring a machine as:
+
+SELF-SERVICE KIOSK
+
+In kiosk mode:
+
+hide admin
+
+full screen
+
+prevent unnecessary system interaction
+
+automatically launch application
+
+automatically reconnect RFID reader
+
+automatically reset between sessions
+
+Do not lock Windows itself unless explicitly required.
+
+114. ADMIN DESKTOP MODE
+
+Admin workstation:
+
+Dashboard
+
+Navigation
+
+Reports
+
+RFID tools
+
+Data management
+
+Same application, different role/device configuration.
+
+115. TERMINAL CONFIGURATION
+
+Create:
+
+Terminal Settings
+
+Fields:
+
+Terminal name
+
+Terminal type
+
+Assigned library
+
+Assigned RFID reader
+
+Mode
+
+Language
+
+Auto reset timeout
+
+Session timeout
+
+Terminal types:
+
+Admin
+
+Self-Service
+
+RFID Tagging
+
+Inventory
+
+116. TRANSACTION RECEIPT
+
+After borrowing/returning, optionally produce:
+
+Digital receipt
+
+Display:
+
+Transaction:
+
+LN-20260921-00124
+
+Member:
+
+Ahmed Ben Ali
+
+Books:
+
+3
+
+Due:
+
+05/10/2026
+
+Optional:
+
+print
+
+PDF
+
+email later
+
+QR receipt
+
+Do not make printing mandatory.
+
+117. QR TRANSACTION ID
+
+A transaction can have a QR code containing a safe reference identifier.
+
+Do not put sensitive member data directly inside QR codes.
+
+Use a signed/reference token.
+
+118. BOOK CONDITION
+
+When returning a book, optionally allow:
+
+Good
+
+Minor Damage
+
+Damaged
+
+Missing Pages
+
+Wet
+
+Other
+
+This may be:
+
+self-service disabled
+
+librarian-only
+
+optional according to policy
+
+Do not make students type long explanations in the normal path.
+
+119. OVERDUE DASHBOARD
+
+Admin should see:
+
+Overdue today
+
+Overdue 1–7 days
+
+Overdue 8–30 days
+
+Overdue 30+ days
+
+Click opens affected loans.
+
+120. MEMBER RISK / BLOCKING RULES
+
+Do not invent a "risk score."
+
+Use transparent rules.
+
+Example:
+
+Blocked:
+
+Outstanding fine > configured threshold
+
+Blocked:
+
+Lost books > configured threshold
+
+Blocked:
+
+Account expired
+
+Blocked:
+
+Administrator manually blocked
+
+Show exact reason.
+
+121. BOOK AVAILABILITY STATES
+
+Use human-readable status:
+
+Available
+
+Borrowed
+
+Reserved
+
+Overdue
+
+Lost
+
+Damaged
+
+Maintenance
+
+Archived
+
+RFID status separately:
+
+Tagged
+
+Untagged
+
+Unknown
+
+Faulty
+
+Unverified
+
+Do not combine these into one overloaded status field.
+
+122. RFID HEALTH STATUS
+
+For each physical copy:
+
+RFID:
+
+Healthy
+
+Last read:
+
+21/09/2026 14:22
+
+Last verification:
+
+21/09/2026
+
+Potential issues:
+
+RFID:
+
+Not responding
+
+The book can still exist even if RFID fails.
+
+123. INVENTORY RECONCILIATION
+
+After shelf scan:
+
+Allow:
+
+Mark Missing
+
+Move to Detected Location
+
+Investigate
+
+Ignore Once
+
+Assign Unknown RFID
+
+Every reconciliation action should be audited.
+
+124. RFID WRITE SECURITY
+
+Never automatically rewrite arbitrary RFID tags merely because they are detected.
+
+Writing must only happen when:
+
+User explicitly initiated writing
+
+Correct workflow selected
+
+Correct target entity selected
+
+Tag validated
+
+Permission verified
+
+Before write:
+
+You are about to write RFID data.
+
+Book:
+
+Clean Code
+
+Copy:
+
+CC-000001
+
+RFID:
+
+E280...
+
+Continue?
+
+125. WRONG TAG PROTECTION
+
+If the user selected:
+
+Copy CC-001
+
+but the detected RFID is already assigned to:
+
+Copy CC-009
+
+STOP.
+
+Display:
+
+WRONG RFID TAG
+
+This tag is already assigned to another copy.
+
+No changes have been made.
+
+126. WRITE VERIFICATION
+
+After write:
+
+Write
+
+↓
+
+Read
+
+↓
+
+Compare
+
+↓
+
+Checksum/validation where applicable
+
+↓
+
+Save association
+
+If verification fails:
+
+RFID TAG NOT VERIFIED
+
+The tag was not changed in the database.
+
+Please retry.
+
+Never create database mapping before a required write is verified.
+
+127. DATABASE + HARDWARE TRANSACTION COORDINATION
+
+RFID hardware and database transactions cannot be one literal ACID transaction.
+
+Design compensation logic.
+
+Example:
+
+1. Validate RFID
+
+2. Perform write
+
+3. Verify RFID
+
+4. Commit database assignment
+
+If step 4 fails after step 3:
+
+RFID is written
+
+Database assignment failed
+
+Do not hide this.
+
+Create an "RFID pending reconciliation" record and notify admin.
+
+128. BOOK TITLE VS COPY MANAGEMENT
+
+This distinction is mandatory.
+
+Example:
+
+The Great Gatsby
+
+may have:
+
+Copy 1 → RFID A
+
+Copy 2 → RFID B
+
+Copy 3 → RFID C
+
+Do not make one RFID field on the book title itself.
+
+RFID belongs to the physical copy.
+
+129. CARD VS MEMBER MANAGEMENT
+
+Likewise:
+
+Member
+
+    ↓
+
+Card history
+
+    ↓
+
+Current active card
+
+A member may have multiple historical cards.
+
+Only one should normally be active unless the institution explicitly configures multiple cards.
+
+130. REPORT FILTERING
+
+Every report must support filters where appropriate:
+
+Library
+
+Branch
+
+Date range
+
+Member type
+
+Category
+
+Author
+
+Status
+
+Department
+
+RFID
+
+Display applied filters in exported reports.
+
+131. DATA TABLE QUALITY
+
+All administrative tables should include:
+
+sorting
+
+filtering
+
+search
+
+pagination
+
+column sizing
+
+row selection
+
+export
+
+responsive layout
+
+empty state
+
+loading state
+
+error state
+
+Avoid huge unstructured tables.
+
+132. DETAILS DRAWERS
+
+Use side panels/dialogs for fast review.
+
+For example clicking a book:
+
+Book Details
+
+A right-side drawer can show:
+
+Cover
+
+Title
+
+Author
+
+ISBN
+
+Copies
+
+Availability
+
+RFID
+
+Location
+
+The user should not always need a full page navigation.
+
+133. QUICK ACTIONS
+
+On a book copy:
+
+Scan RFID
+
+Assign RFID
+
+Replace RFID
+
+Move
+
+Borrow History
+
+Inventory
+
+Mark Damaged
+
+Mark Lost
+
+On a member:
+
+Scan Card
+
+Replace Card
+
+View Loans
+
+Create Manual Loan
+
+Block
+
+Unblock
+
+View Fines
+
+134. NOTIFICATIONS TO STUDENTS
+
+Architect the system so future notifications can support:
+
+due date reminders
+
+overdue notifications
+
+reservation ready
+
+card expiration
+
+account blocked
+
+Channels may later include:
+
+email
+
+SMS
+
+push notification
+
+Do not make external messaging mandatory for the first release.
+
+135. BOOK RECOMMENDATIONS
+
+Do not make AI recommendations part of the core RFID workflow.
+
+If added later, keep them optional.
+
+The core product must remain:
+
+Find
+
+Borrow
+
+Return
+
+Manage
+
+Inventory
+
+Report
+
+fast and reliable.
+
+136. AI-READINESS
+
+Architect an optional future assistant layer.
+
+An AI assistant could later answer:
+
+How many books are overdue?
+
+Which section has the highest circulation?
+
+Which RFID tags failed yesterday?
+
+Which students have accounts expiring this month?
+
+But do not let AI directly alter:
+
+loans
+
+RFID
+
+fines
+
+member records
+
+without explicit authorization and audit.
+
+137. DASHBOARD AI INSIGHTS — OPTIONAL
+
+If implemented, insights should be factual.
+
+Example:
+
+RFID TAGGING STATUS
+
+93.4% of physical copies have active RFID tags.
+
+394 copies remain untagged.
+
+Not:
+
+The library is poorly managed.
+
+Keep analytics objective.
+
+138. MOBILE/WEB FUTURE
+
+Design APIs cleanly enough that another client could later be built.
+
+Possible future clients:
+
+Web admin
+
+Mobile app
+
+Student mobile app
+
+Self-service kiosk
+
+Desktop RFID station
+
+The core business logic should not depend on one screen.
+
+139. API LAYER
+
+Use clean API endpoints if the architecture has a backend.
+
+Conceptual endpoints:
+
+/auth/login
+
+/members
+
+/members/:id
+
+/members/:id/card
+
+/books
+
+/books/:id
+
+/books/:id/copies
+
+/rfid/read
+
+/rfid/write
+
+/rfid/verify
+
+/loans
+
+/loans/borrow
+
+/loans/return
+
+/loans/:id
+
+/reservations
+
+/fines
+
+/inventory
+
+/reports
+
+/audit
+
+/settings
+
+Use proper HTTP semantics.
+
+140. RFID API DESIGN
+
+If hardware is accessed locally, do not expose raw DLL access to remote clients.
+
+Use a local secure hardware service.
+
+Concept:
+
+Application
+
+      ↓
+
+Local RFID Service
+
+      ↓
+
+U1-CU-71 SDK
+
+      ↓
+
+Reader
+
+This also gives the system a future path for remote applications.
+
+141. LOCAL HARDWARE SERVICE
+
+If necessary, create:
+
+RFID Hardware Service
+
+running locally on Windows.
+
+Responsibilities:
+
+SDK loading
+
+reader detection
+
+connection
+
+scanning
+
+writing
+
+verification
+
+logs
+
+concurrency control
+
+reconnect
+
+Frontend communicates through:
+
+local IPC
+
+localhost API
+
+platform channel
+
+named pipes
+
+another appropriate mechanism
+
+Choose the best approach for the existing stack.
+
+142. SOFTWARE UPDATE ARCHITECTURE
+
+Do not let application updates overwrite:
+
+RFID SDK configuration
+
+local library data
+
+backups
+
+logs
+
+Separate:
+
+Application
+
+Configuration
+
+Database
+
+Hardware SDK
+
+Backups
+
+Logs
+
+143. ERROR RECOVERY
+
+On application startup after a crash:
+
+Check for:
+
+unfinished RFID write
+
+unfinished batch tagging
+
+unfinished inventory
+
+unfinished transaction
+
+If detected:
+
+RECOVERABLE OPERATION FOUND
+
+The application detected an unfinished RFID operation.
+
+[ REVIEW ]
+
+[ DISMISS ]
+
+Never silently continue with assumptions.
+
+144. AUDIT EVERYTHING INVOLVING RFID WRITING
+
+Minimum log:
+
+timestamp
+
+admin
+
+reader
+
+tag EPC before
+
+tag EPC after
+
+TID
+
+target entity
+
+operation
+
+result
+
+error
+
+verification result
+
+This is critical because RFID writing modifies physical assets.
+
+145. BACKUP RFID INFORMATION
+
+Backups must include:
+
+RFID EPC
+
+RFID TID
+
+RFID history
+
+card assignments
+
+tag assignments
+
+retired RFID tags
+
+write operations
+
+audit logs
+
+Do not make RFID relationships disposable.
+
+146. DATABASE INDEXES
+
+At minimum create indexes for:
+
+rfid_tags.epc
+
+rfid_tags.tid
+
+rfid_cards.epc
+
+rfid_cards.tid
+
+book_copies.accession_number
+
+book_copies.book_id
+
+books.isbn
+
+members.member_number
+
+members.student_number
+
+loans.member_id
+
+loans.copy_id
+
+loans.status
+
+loans.due_at
+
+inventory_audit_items.rfid
+
+147. DATA INTEGRITY RULES
+
+Examples:
+
+A book copy cannot be borrowed twice simultaneously.
+
+A returned loan cannot remain active.
+
+A lost book cannot be marked available without explicit recovery.
+
+A blocked card cannot authenticate into self-service.
+
+An expired card cannot automatically borrow.
+
+An RFID tag cannot belong to two active copies.
+
+An active loan must reference an active physical copy.
+
+Historical loans must remain immutable.
+
+148. MEMBER CARD AUTHENTICATION LOGIC
+
+When RFID card detected:
+
+Read EPC
+
+↓
+
+Find active card
+
+↓
+
+Find member
+
+↓
+
+Validate member
+
+↓
+
+Start session
+
+If not found:
+
+UNKNOWN CARD
+
+This card is not registered.
+
+Please visit the library desk.
+
+If blocked:
+
+CARD BLOCKED
+
+Please contact the library.
+
+Do not expose sensitive internal blocking reasons to the student unless configured.
+
+149. MULTIPLE CARD READS
+
+If several RFID cards appear during a student login:
+
+Do NOT randomly choose one.
+
+Display:
+
+MULTIPLE CARDS DETECTED
+
+Please keep only one library card near the reader.
+
+Same principle for book scanning where the selected operation requires one target.
+
+150. RFID SIGNAL / DISTANCE
+
+The reader's real range depends on tag, orientation, environment, and configuration.
+
+Do not promise a fixed range in the UI.
+
+The system should allow the reader configuration to be tuned.
+
+Provide:
+
+Read Power
+
+only if supported.
+
+Avoid dangerously aggressive reader settings.
+
+151. PHYSICAL RFID GUIDANCE
+
+Add installation notes for administrators:
+
+Keep reader away from unnecessary metal
+
+Avoid placing reader next to strong electromagnetic interference
+
+Ensure tags are oriented properly
+
+Test actual books/tag materials
+
+Validate scanning distance
+
+Test books with different covers/materials
+
+The application should include a short setup guide.
+
+152. RFID TAG PLACEMENT GUIDE
+
+Admin help page:
+
+BOOK RFID LABEL
+
+Recommended:
+
+Place RFID label consistently on the inside cover or institution-defined location.
+
+Avoid:
+
+Metal-covered locations
+
+Locations where tag can be damaged
+
+Directly adjacent to unsuitable materials
+
+Do not prescribe a physical placement until the library's actual RFID labels are tested.
+
+153. SETUP WIZARD
+
+First launch:
+
+Welcome to Library Management System
+
+Step 1
+
+Create Administrator
+
+Step 2
+
+Create Library
+
+Step 3
+
+Connect RFID Reader
+
+Step 4
+
+Test RFID
+
+Step 5
+
+Configure Loan Rules
+
+Step 6
+
+Create First Member
+
+Step 7
+
+Add First Book
+
+Complete
+
+Make setup easy.
+
+154. FIRST RFID TEST
+
+During setup:
+
+Connect U1-CU-71
+
+[ TEST READER ]
+
+Then:
+
+Reader detected ✓
+
+Place an RFID tag near the reader.
+
+Waiting...
+
+Then:
+
+RFID TAG DETECTED ✓
+
+EPC:
+
+...
+
+TID:
+
+...
+
+Reader setup successful.
+
+If not:
+
+Reader was detected but no tag was found.
+
+Try moving the tag closer.
+
+155. SYSTEM SETTINGS
+
+Settings sections:
+
+General
+
+Libraries
+
+Loan Rules
+
+RFID
+
+Kiosk
+
+Languages
+
+Notifications
+
+Security
+
+Reports
+
+Backup
+
+Users
+
+Audit
+
+156. SECURITY SETTINGS
+
+Allow configuring:
+
+Session timeout
+
+Admin login attempts
+
+Password policy
+
+Automatic logout
+
+Student kiosk timeout
+
+RFID write permissions
+
+Audit retention
+
+157. USER EXPERIENCE PRINCIPLE
+
+The application should never force the user to understand RFID technology.
+
+Students should think:
+
+Scan card
+
+→
+
+Choose Borrow/Return
+
+→
+
+Place books
+
+→
+
+Done
+
+They should not see:
+
+EPC
+
+TID
+
+Inventory session
+
+RFID protocol
+
+SDK
+
+DLL
+
+COM port
+
+Those are administrator/technical concepts.
+
+158. TECHNICAL UI VS STUDENT UI
+
+Student sees:
+
+Scan your card
+
+Borrow
+
+Return
+
+Books detected
+
+Success
+
+Administrator sees:
+
+EPC
+
+TID
+
+Reader
+
+Power
+
+SDK
+
+Device
+
+Inventory
+
+Diagnostics
+
+Audit
+
+Keep these worlds separate.
+
+159. MOBILE-STYLE TOUCH INTERACTION
+
+Student kiosk buttons should be large.
+
+Minimum touch target should be comfortably usable.
+
+Examples:
+
+BORROW BOOKS
+
+huge card.
+
+RETURN BOOKS
+
+huge card.
+
+No tiny hyperlinks.
+
+160. PREMIUM VISUAL DIRECTION
+
+Visual inspiration:
+
+Apple-like cleanliness
+
+modern university library
+
+premium banking dashboard
+
+enterprise SaaS
+
+modern kiosk software
+
+NOT:
+
+old Windows forms
+
+generic Bootstrap admin
+
+colorful school application
+
+dark hacker dashboard
+
+excessive gradients
+
+neon colors
+
+cluttered data tables
+
+cheap-looking icons
+
+Use:
+
+White
+
+Soft gray
+
+Ice blue
+
+Sky blue
+
+Blue
+
+Subtle green
+
+Subtle amber
+
+Soft red
+
+The interface must remain bright.
+
+161. TYPOGRAPHY
+
+Use a modern highly readable font available in the target environment.
+
+Hierarchy:
+
+Page title
+
+Section title
+
+Metric
+
+Body
+
+Caption
+
+Status
+
+Make numbers large in dashboards.
+
+162. ICONOGRAPHY
+
+Use a consistent icon library.
+
+Avoid mixing:
+
+random icon styles
+
+emoji everywhere
+
+3D icons
+
+cartoon icons
+
+Student kiosk can use a limited set of friendly visual icons.
+
+Admin should use professional line icons.
+
+163. BOOK COVER UI
+
+Use book covers where useful.
+
+Example:
+
+┌───────┐
+
+│ COVER │
+
+│       │
+
+└───────┘
+
+Clean Code
+
+Robert C. Martin
+
+Available
+
+Do not load huge images unnecessarily.
+
+164. RFID TAG STATUS COLORS
+
+Use semantic colors:
+
+Green:
+
+Healthy / Available
+
+Amber:
+
+Warning / Due soon
+
+Red:
+
+Error / Overdue / Blocked
+
+Blue:
+
+RFID detected / Active
+
+Gray:
+
+Inactive / Archived
+
+Always pair color with text.
+
+165. AUDIT LOG VISUALIZATION
+
+Timeline:
+
+14:20
+
+RFID card assigned
+
+14:24
+
+Book created
+
+14:26
+
+RFID tag assigned
+
+14:31
+
+Book borrowed
+
+15:05
+
+Book returned
+
+Easy to understand.
+
+166. NOTIFICATION PRIORITY
+
+Levels:
+
+Info
+
+Success
+
+Warning
+
+Critical
+
+Critical examples:
+
+Database unavailable
+
+RFID service crashed
+
+Backup failed
+
+167. DATABASE BACKUP HEALTH
+
+Dashboard:
+
+Last backup:
+
+Today, 03:00
+
+Status:
+
+Successful ✓
+
+If failed:
+
+Backup failed
+
+Last successful backup:
+
+18/09/2026
+
+Make this visible to administrators.
+
+168. MONITORING PAGE
+
+Admin can see:
+
+Application
+
+Database
+
+RFID Reader
+
+Backup
+
+Storage
+
+Example:
+
+Database     ✓ Healthy
+
+RFID Reader  ✓ Connected
+
+Backup       ✓ Healthy
+
+Storage      ✓ 62% used
+
+169. TEST DATA
+
+During development, create seed data only if appropriate.
+
+Example:
+
+Demo Library
+
+20 books
+
+10 members
+
+RFID test records
+
+sample loans
+
+Clearly mark it as demo/test data.
+
+Never mix demo RFID identifiers with real RFID records.
+
+170. TEST ENVIRONMENT
+
+Create separate environments where possible:
+
+Development
+
+Staging
+
+Production
+
+Never allow development code to accidentally write production RFID tags.
+
+171. RFID SIMULATION MODE
+
+Create:
+
+RFID Simulator
+
+for development when physical reader is unavailable.
+
+Example:
+
+Simulate Card Scan
+
+Simulate Book Scan
+
+Simulate Multiple Tags
+
+Simulate Write Success
+
+Simulate Write Failure
+
+Simulate Disconnect
+
+IMPORTANT:
+
+The simulator must be clearly marked:
+
+SIMULATION MODE
+
+Never pretend simulated tags are real.
+
+172. HARDWARE TEST MODE
+
+Likewise:
+
+REAL HARDWARE MODE
+
+with clear indicator.
+
+This makes development easier.
+
+173. AUTOMATED TESTING
+
+Create tests for:
+
+Member
+
+create
+
+update
+
+block
+
+deactivate
+
+card assignment
+
+Books
+
+create
+
+copies
+
+RFID assignment
+
+duplicate prevention
+
+Loans
+
+borrow
+
+return
+
+overdue
+
+renewal
+
+limit
+
+RFID
+
+tag parsing
+
+deduplication
+
+unknown tag
+
+duplicate tag
+
+write flow
+
+read-back verification
+
+reader disconnected
+
+174. CRITICAL RFID TEST CASES
+
+Test:
+
+Test 1
+
+One valid book.
+
+Test 2
+
+Five valid books.
+
+Test 3
+
+Same book repeatedly detected.
+
+Test 4
+
+Unknown RFID.
+
+Test 5
+
+Already borrowed book.
+
+Test 6
+
+Blocked student.
+
+Test 7
+
+Borrowing limit reached.
+
+Test 8
+
+Reader disconnected during scan.
+
+Test 9
+
+RFID write fails.
+
+Test 10
+
+RFID write succeeds but verification fails.
+
+Test 11
+
+Same RFID assigned twice.
+
+Test 12
+
+Two users try to borrow same book.
+
+Test 13
+
+Multiple cards detected.
+
+Test 14
+
+Book has no RFID.
+
+Test 15
+
+Card exists but member is inactive.
+
+175. UX TEST CASES
+
+A normal student should be able to understand the interface without instructions.
+
+Measure mentally:
+
+Can they see where to put card?
+
+Can they see that authentication succeeded?
+
+Can they see Borrow / Return?
+
+Can they tell when books are detected?
+
+Can they understand why a book cannot be borrowed?
+
+Can they finish without assistance?
+
+Keep this workflow extremely simple.
+
+176. PERFORMANCE TEST
+
+Simulate:
+
+10,000 books
+
+50,000 book copies
+
+20,000 members
+
+100,000 historical loans
+
+100,000 RFID records
+
+Search must remain responsive.
+
+177. DATA IMPORT PERFORMANCE
+
+Do not insert 50,000 records one-by-one with UI blocking.
+
+Use batch operations and progress reporting.
+
+178. RESPONSIVE ADMIN UI
+
+Support:
+
+1920×1080
+
+1600×900
+
+1366×768
+
+1280×720
+
+Do not design only for a gigantic monitor.
+
+179. KIOSK UI
+
+Optimize student kiosk for:
+
+1366×768
+
+1920×1080
+
+touchscreen
+
+mouse
+
+keyboard
+
+Prefer large visual controls.
+
+180. PAGE ROUTING
+
+Create logical routes such as:
+
+/
+
+ /kiosk
+
+ /kiosk/authentication
+
+ /kiosk/borrow
+
+ /kiosk/return
+
+ /admin
+
+ /admin/dashboard
+
+ /admin/members
+
+ /admin/cards
+
+ /admin/books
+
+ /admin/copies
+
+ /admin/loans
+
+ /admin/returns
+
+ /admin/inventory
+
+ /admin/rfid
+
+ /admin/rfid/read
+
+ /admin/rfid/write
+
+ /admin/libraries
+
+ /admin/reports
+
+ /admin/fines
+
+ /admin/users
+
+ /admin/settings
+
+ /admin/audit
+
+Actual route syntax must match the framework.
+
+181. ADMIN NAVIGATION
+
+Organize:
+
+Overview
+
+Dashboard
+
+Library
+
+BooksCatalogMembersLoansReservationsFines
+
+RFID
+
+RFID CenterCard ManagementBook TaggingInventoryReadersDiagnostics
+
+Administration
+
+LibrariesUsers & RolesSettingsAuditBackup
+
+182. QUICK RFID SEARCH
+
+Put a small global RFID action near the top of the admin interface:
+
+Scan RFID
+
+Click it.
+
+Place any card/book near reader.
+
+System identifies it.
+
+This can replace manually searching by EPC.
+
+183. RFID QUICK ACTION
+
+If book:
+
+RFID detected
+
+Clean Code
+
+Copy CC-003
+
+Available
+
+[VIEW BOOK]
+
+If card:
+
+RFID detected
+
+Ahmed Ben Ali
+
+Student
+
+[VIEW MEMBER]
+
+If unknown:
+
+Unknown RFID
+
+[REGISTER]
+
+184. SCANNER SESSION
+
+Create a reusable scan-session concept:
+
+RfidScanSession
+
+Properties:
+
+id
+
+purpose
+
+reader
+
+startedAt
+
+endedAt
+
+mode
+
+detectedTags
+
+status
+
+Purposes:
+
+MemberAuthentication
+
+BookBorrow
+
+BookReturn
+
+CardAssignment
+
+BookTagging
+
+Inventory
+
+QuickLookup
+
+Diagnostics
+
+This provides clean architecture.
+
+185. AUDIT RFID SESSIONS
+
+Record important scan sessions.
+
+For example:
+
+Inventory scan
+
+Library:
+
+Central
+
+Shelf:
+
+CS-04
+
+Duration:
+
+00:02:31
+
+Detected:
+
+84
+
+Expected:
+
+86
+
+Missing:
+
+2
+
+186. USER SESSION
+
+Student session:
+
+Member
+
+Authentication card
+
+Session ID
+
+Start
+
+End
+
+Terminal
+
+Actions
+
+Do not store unnecessary personal information in session logs.
+
+187. PRIVACY
+
+Only collect data required by the library.
+
+Provide configurable retention for:
+
+audit logs
+
+RFID logs
+
+kiosk sessions
+
+device logs
+
+Protect personal data.
+
+188. SECURITY OF BACKUPS
+
+Backups containing member information must be protected.
+
+Use:
+
+access control
+
+secure storage
+
+optional encryption
+
+administrator-only restore
+
+189. DATABASE MIGRATIONS
+
+Use versioned database migrations.
+
+Never modify production tables manually without migration tracking.
+
+190. SEED DEFAULT SETTINGS
+
+On initial installation create:
+
+Default member types
+
+Default statuses
+
+Default languages
+
+Default loan rules
+
+Default permissions
+
+But make them editable.
+
+191. DEFAULT MEMBER TYPES
+
+Create:
+
+Student
+
+Teacher
+
+Staff
+
+Researcher
+
+External
+
+192. DEFAULT BOOK TYPES
+
+Create:
+
+Book
+
+Reference Book
+
+Magazine
+
+Journal
+
+Thesis
+
+Newspaper
+
+Multimedia
+
+Other
+
+193. ADMIN DASHBOARD WIDGETS
+
+Allow dashboard customization.
+
+Widgets:
+
+Overview
+
+RFID Reader
+
+Loans Today
+
+Returns Today
+
+Overdue
+
+Inventory
+
+Recent Activity
+
+RFID Errors
+
+User can hide/reorder widgets.
+
+194. RECENT ACTIVITY
+
+Display:
+
+Ahmed borrowed 2 books
+
+Sara returned 1 book
+
+RFID card assigned
+
+Book tagged
+
+Unknown RFID detected
+
+Inventory completed
+
+195. BOOK HISTORY
+
+Every copy should have:
+
+Current status
+
+Location
+
+RFID
+
+Borrow history
+
+Return history
+
+Condition history
+
+Inventory history
+
+RFID history
+
+196. RFID HISTORY
+
+For each RFID:
+
+Created
+
+Assigned
+
+Written
+
+Verified
+
+Moved
+
+Reassigned
+
+Retired
+
+Example:
+
+21/09
+
+Assigned to CC-0001
+
+30/09
+
+Transferred to CC-0021
+
+12/10
+
+Retired
+
+197. RFID TAG RETIREMENT
+
+Never permanently erase historical RFID data.
+
+Status:
+
+Retired
+
+and retain history.
+
+198. RFID TAG REUSE POLICY
+
+Do not reuse a retired RFID automatically.
+
+Require explicit administrator workflow:
+
+Reactivate RFID
+
+Then:
+
+verify tag
+
+verify old assignment is no longer active
+
+audit action
+
+assign new target
+
+199. BOOK MOVEMENT
+
+Support moving a copy:
+
+From:
+
+Central Library
+
+Shelf CS-04
+
+To:
+
+Engineering Library
+
+Shelf ENG-02
+
+RFID does not change.
+
+Only location changes.
+
+Audit the movement.
+
+200. INTER-LIBRARY TRANSFER
+
+Optional advanced workflow:
+
+Transfer Copy
+
+Status:
+
+Available
+
+→
+
+In Transfer
+
+→
+
+Available at Destination
+
+RFID remains attached.
+
+201. RETURN BIN / PROCESSING
+
+Optional:
+
+Returned
+
+→
+
+Inspection
+
+→
+
+Available
+
+Useful if librarians need to inspect physical copies before making them available.
+
+202. FAST BORROW MODE FOR LIBRARIAN
+
+Admin/librarian can:
+
+Scan student card
+
+↓
+
+Scan all books
+
+↓
+
+Click Confirm
+
+One screen.
+
+No need to navigate through separate pages.
+
+203. FAST RETURN MODE
+
+Same:
+
+Scan student card
+
+↓
+
+Scan books
+
+↓
+
+Review
+
+↓
+
+Return
+
+204. LIBRARIAN ASSISTANCE MODE
+
+If a student cannot use kiosk:
+
+Librarian Assistance
+
+A librarian can operate the transaction.
+
+The system should clearly identify:
+
+Operator:
+
+Librarian Name
+
+205. TRANSACTION RECEIPT
+
+After a librarian transaction:
+
+Borrowing completed.
+
+Member:
+
+Ahmed Ben Ali
+
+Books:
+
+3
+
+Due:
+
+05/10/2026
+
+Buttons:
+
+Print
+
+PDF
+
+Done
+
+206. RFID CARD PRINTING PREPARATION
+
+Architect member cards so a future card printing feature can be added.
+
+Fields:
+
+Member photo
+
+Name
+
+Student ID
+
+Library
+
+Card expiry
+
+RFID identifier
+
+Do not print sensitive data unnecessarily.
+
+207. BOOK LABEL PRINTING PREPARATION
+
+Support future integration for:
+
+RFID labels
+
+barcode
+
+accession labels
+
+A copy can have:
+
+Book
+
+Accession number
+
+RFID
+
+Barcode
+
+208. LOGO / BRANDING
+
+Admin can configure:
+
+Library logo
+
+Institution name
+
+Primary accent
+
+Receipt header
+
+PDF header
+
+Default design should still be premium.
+
+209. THEMING
+
+Only support bright/light theme initially.
+
+Do not create a dark theme unless explicitly requested later.
+
+Use:
+
+Light
+
+Bright
+
+Professional
+
+The application should never accidentally switch into a dark component.
+
+210. NO EXCESSIVE COLOR
+
+Do not color every section differently.
+
+Use one main brand color with semantic status colors.
+
+The goal:
+
+Premium
+
+Calm
+
+Professional
+
+not:
+
+Colorful
+
+Childish
+
+Noisy
+
+211. EMPTY SCREEN INITIAL STATE
+
+Student kiosk startup:
+
+LIBRARY NAME
+
+Welcome
+
+Please tap your RFID card to begin.
+
+          ◉
+
+      RFID reader
+
+Waiting for card...
+
+The entire interaction should be obvious.
+
+212. CARD AUTHENTICATION FEEDBACK
+
+When detected:
+
+Card detected ✓
+
+Then:
+
+Welcome, Ahmed
+
+Do not expose the raw EPC unless in admin diagnostics.
+
+213. SCAN BOOK FEEDBACK
+
+When book appears:
+
+✓ Clean Code added
+
+The UI may briefly animate the row.
+
+Do not make unnecessary sounds unless enabled.
+
+214. OPTIONAL SOUND SYSTEM
+
+Configurable:
+
+RFID detected
+
+Success
+
+Warning
+
+Error
+
+Sound should be subtle.
+
+Allow disable.
+
+215. ACCESSIBILITY SOUND + VISUAL
+
+Never rely solely on sound.
+
+All events must have visual feedback.
+
+216. TRANSACTION SAFETY FOR STUDENT EXIT
+
+Before returning to home:
+
+Ensure:
+
+No pending write
+
+No pending transaction
+
+No active DB transaction
+
+RFID scan stopped
+
+Student session cleared
+
+217. SOFTWARE CRASH RESILIENCE
+
+If frontend crashes during:
+
+Borrow
+
+Return
+
+RFID write
+
+the backend must maintain data integrity.
+
+On restart:
+
+Reconcile incomplete sessions
+
+where appropriate.
+
+218. LOGGING ARCHITECTURE
+
+Separate:
+
+Application logs
+
+RFID hardware logs
+
+Audit logs
+
+Security logs
+
+Transaction logs
+
+Do not mix them into one uncontrolled file.
+
+219. ADMIN DIAGNOSTICS
+
+Create a technical information panel:
+
+Application Version
+
+Database Version
+
+SDK Version
+
+Reader Model
+
+Reader Connection
+
+OS Architecture
+
+Last Error
+
+Last RFID Read
+
+Useful for support.
+
+220. SUPPORT BUNDLE
+
+Create optional:
+
+Export Diagnostics
+
+which gathers:
+
+application version
+
+hardware status
+
+SDK status
+
+recent non-sensitive errors
+
+configuration summary
+
+Do not include passwords or private member data.
+
+221. SOFTWARE VERSIONING
+
+Display:
+
+Library Management System
+
+v1.0.0
+
+Use semantic versioning.
+
+222. DOCUMENTATION
+
+Include admin documentation:
+
+Getting Started
+
+Connecting U1-CU-71
+
+Issuing RFID Cards
+
+Tagging Books
+
+Borrowing
+
+Returning
+
+Inventory
+
+Troubleshooting RFID
+
+Backup
+
+User Management
+
+223. HARDWARE INSTALLATION GUIDE
+
+Include:
+
+1. Connect USB
+
+2. Install vendor SDK/driver if required
+
+3. Configure reader mode
+
+4. Launch application
+
+5. Open RFID Diagnostics
+
+6. Verify connection
+
+7. Scan test card
+
+8. Scan test book tag
+
+Do not state driver installation is mandatory unless the actual SDK/device configuration requires it.
+
+224. VENDOR SDK FILE MANAGEMENT
+
+Keep vendor binaries isolated.
+
+For example:
+
+/vendor/rfid/u1-cu-71/
+
+or a suitable project-native structure.
+
+Do not scatter DLLs throughout the application.
+
+Document licensing/redistribution requirements where applicable.
+
+225. BITNESS
+
+Do not assume x86 or x64.
+
+Inspect the actual DLL.
+
+The application/native bridge must match the DLL architecture.
+
+For example:
+
+64-bit application
+
++
+
+64-bit vendor DLL
+
+or use the appropriate compatible architecture.
+
+Document the final requirement.
+
+226. SDK VERSION LOCK
+
+Record:
+
+RFID SDK:
+
+U1-CU-71 Reader SDK 20240912
+
+in project documentation.
+
+If the SDK is later replaced:
+
+SDK adapter version
+
+must be tracked.
+
+227. NO FAKE METHODS
+
+This rule is extremely important:
+
+DO NOT write imaginary code like:
+
+U1Reader.connect()
+
+U1Reader.readEPC()
+
+U1Reader.writeTag()
+
+unless such methods are actually wrappers created by YOU.
+
+For vendor APIs:
+
+inspect exact exported names
+
+inspect parameters
+
+inspect return values
+
+inspect data structures
+
+inspect calling convention
+
+inspect DLL architecture
+
+Then build your own clean wrapper around them.
+
+228. SDK WRAPPER
+
+Create your own stable abstraction:
+
+IUhfReader
+
+Example conceptual methods:
+
+connect()
+
+disconnect()
+
+startInventory()
+
+stopInventory()
+
+readTags()
+
+writeEpc()
+
+readEpc()
+
+readTid()
+
+verify()
+
+getCapabilities()
+
+getStatus()
+
+These are YOUR application abstractions.
+
+Map them internally to the real SDK.
+
+229. HARDWARE CAPABILITIES
+
+Expose:
+
+supportsEpcRead
+
+supportsEpcWrite
+
+supportsTid
+
+supportsUserMemory
+
+supportsMultiTag
+
+supportsPowerControl
+
+supportsKeyboardMode
+
+This prevents unsupported features appearing in the UI.
+
+230. IMPLEMENTATION ORDER
+
+Build in this order.
+
+PHASE 1
+
+Project architecture and database.
+
+PHASE 2
+
+Authentication and roles.
+
+PHASE 3
+
+Library management.
+
+PHASE 4
+
+Members.
+
+PHASE 5
+
+Books and physical copies.
+
+PHASE 6
+
+RFID hardware abstraction.
+
+PHASE 7
+
+Real U1-CU-71 integration.
+
+PHASE 8
+
+RFID card enrollment.
+
+PHASE 9
+
+RFID book tagging.
+
+PHASE 10
+
+Borrow workflow.
+
+PHASE 11
+
+Return workflow.
+
+PHASE 12
+
+Inventory.
+
+PHASE 13
+
+Reports.
+
+PHASE 14
+
+Audit/security.
+
+PHASE 15
+
+Polish/testing/optimization.
+
+231. FIRST DELIVERABLE
+
+Before building all screens, produce:
+
+Architecture
+
+Database schema
+
+RFID abstraction
+
+SDK adapter plan
+
+Authentication design
+
+Navigation structure
+
+Then begin implementation.
+
+Do not spend most of the project producing static mockups.
+
+The goal is a WORKING PRODUCT.
+
+232. DEVELOPMENT PRINCIPLE
+
+Never create:
+
+Fake buttons
+
+Fake data
+
+Fake RFID
+
+Fake success messages
+
+unless they are explicitly inside:
+
+SIMULATION MODE
+
+Every implemented feature must either:
+
+Work with real data/hardware, or
+
+Clearly be marked as simulation/test functionality.
+
+233. UI IMPLEMENTATION PRINCIPLE
+
+Do not create 50 disconnected screens.
+
+Build reusable components.
+
+Examples:
+
+RfidScannerCard
+
+MemberCard
+
+BookCard
+
+StatusBadge
+
+MetricCard
+
+SearchBar
+
+DataTable
+
+ConfirmationDialog
+
+RfidTagDialog
+
+ReaderStatusIndicator
+
+LoanSummary
+
+234. BOOK SCANNER COMPONENT
+
+Create a reusable:
+
+RfidBookScanner
+
+Properties:
+
+mode:
+
+borrow
+
+return
+
+inventory
+
+tagging
+
+lookup
+
+reader:
+
+Reader ID
+
+onTagDetected:
+
+callback
+
+onTagRemoved:
+
+callback
+
+allowMultiple:
+
+true/false
+
+This keeps RFID logic reusable.
+
+235. CARD SCANNER COMPONENT
+
+Create:
+
+RfidCardScanner
+
+Used for:
+
+student authentication
+
+card assignment
+
+quick member lookup
+
+236. ADMIN RFID WRITE COMPONENT
+
+Create:
+
+RfidWriteWizard
+
+Steps:
+
+1. Select target
+
+2. Detect tag
+
+3. Validate
+
+4. Write
+
+5. Verify
+
+6. Commit
+
+7. Audit
+
+Use this for both:
+
+Card writing
+
+Book tag writing
+
+237. RFID WRITE WIZARD UX
+
+Show progress:
+
+STEP 1 ✓ Target selected
+
+STEP 2 ✓ RFID detected
+
+STEP 3 ✓ Tag validated
+
+STEP 4 → Writing...
+
+STEP 5 → Verifying...
+
+STEP 6 → Saving...
+
+Then:
+
+COMPLETE ✓
+
+238. BOOK RFID TAGGING UX
+
+Example:
+
+TAG BOOK COPY
+
+Clean Code
+
+Copy CC-0014
+
+RFID status:
+
+Not assigned
+
+[ PLACE TAG ON READER ]
+
+Waiting...
+
+EPC detected:
+
+E280...
+
+[ ASSIGN RFID ]
+
+Writing...
+
+Verifying...
+
+✓ RFID assigned
+
+239. MEMBER CARD UX
+
+Example:
+
+ISSUE LIBRARY CARD
+
+Ahmed Ben Ali
+
+Student ID:
+
+STU-2026-00154
+
+Current card:
+
+None
+
+Place new card on reader.
+
+Waiting...
+
+Card detected ✓
+
+EPC:
+
+E280...
+
+[ ASSIGN CARD ]
+
+240. BORROW UX — EXACT TARGET
+
+Aim for:
+
+Tap Card
+
+↓
+
+Borrow
+
+↓
+
+Scan Books
+
+↓
+
+Confirm
+
+↓
+
+Done
+
+No unnecessary navigation.
+
+241. RETURN UX — EXACT TARGET
+
+Aim for:
+
+Tap Card
+
+↓
+
+Return
+
+↓
+
+Scan Books
+
+↓
+
+Confirm
+
+↓
+
+Done
+
+242. PERFORMANCE OF BORROW/RETURN
+
+After RFID detection, lookup should be rapid.
+
+Cache commonly used:
+
+library configuration
+
+loan rules
+
+book metadata where useful
+
+But do not sacrifice transaction correctness for speed.
+
+243. RFID QUERY BATCHING
+
+When multiple EPCs are detected:
+
+Do not make one slow blocking network request per EPC.
+
+Use a batch query where practical:
+
+EPC A
+
+EPC B
+
+EPC C
+
+EPC D
+
+→ one efficient lookup.
+
+244. UNKNOWN TAG DISPLAY
+
+Unknown tags should be visually distinct.
+
+Example:
+
+UNKNOWN RFID
+
+EPC E280...
+
+This tag is not registered.
+
+Admin action required.
+
+Student should not be given dangerous controls.
+
+245. BOOK STATUS DISPLAY IN SELF-SERVICE
+
+Use simple labels:
+
+Ready
+
+Unavailable
+
+Already borrowed
+
+Not eligible
+
+Unknown
+
+Avoid technical jargon.
+
+246. ADMIN STATUS DISPLAY
+
+Admin can see:
+
+Available
+
+Borrowed
+
+Overdue
+
+Unknown RFID
+
+RFID mismatch
+
+Wrong location
+
+247. FILTERED INVENTORY VIEW
+
+Provide:
+
+All
+
+Available
+
+Borrowed
+
+Missing
+
+RFID Missing
+
+RFID Errors
+
+Unknown Tags
+
+248. SYSTEM-WIDE STATUS
+
+Top admin bar can show:
+
+RFID ● Connected
+
+Database ● Connected
+
+Backup ● Healthy
+
+Clicking RFID opens diagnostics.
+
+249. USER ACCOUNT MENU
+
+Admin top-right:
+
+Athmane
+
+Super Administrator
+
+Profile
+
+Security
+
+Settings
+
+Logout
+
+Do not display user passwords.
+
+250. DEMO / TEST MODE
+
+Add a clearly visible admin setting:
+
+Enable Simulation Mode
+
+When enabled:
+
+Top banner:
+
+SIMULATION MODE
+
+The application must NEVER silently enter simulation mode.
+
+251. RELEASE CHECKLIST
+
+Before declaring version 1 complete:
+
+Authentication
+
+Admin login works
+
+Password hashing works
+
+Permissions work
+
+Sessions expire
+
+Audit logs exist
+
+RFID
+
+U1-CU-71 detected
+
+SDK initialized
+
+Real tag can be read
+
+Multi-tag works
+
+EPC captured
+
+TID captured where supported
+
+RFID writing works where supported
+
+Write verification works
+
+Error handling works
+
+Reader disconnect recovery works
+
+Members
+
+Create
+
+Edit
+
+Block
+
+RFID assignment
+
+Card replacement
+
+History
+
+Books
+
+Create
+
+Edit
+
+Copies
+
+RFID assignment
+
+RFID replacement
+
+Locations
+
+Inventory
+
+History
+
+Loans
+
+Borrow
+
+Return
+
+Overdue
+
+Renewal
+
+Limits
+
+Fine rules
+
+Atomic transactions
+
+UI
+
+Bright theme
+
+No dark theme
+
+Responsive
+
+Touch-friendly kiosk
+
+English
+
+French
+
+Good empty states
+
+Good error states
+
+Reports
+
+Dashboard
+
+Circulation
+
+Inventory
+
+RFID
+
+Overdue
+
+Fines
+
+Export
+
+252. FINAL QUALITY STANDARD
+
+Do not stop at:
+
+"It works."
+
+The final product should feel like a commercially deployable library management platform.
+
+It must be:
+
+stable
+
+polished
+
+fast
+
+maintainable
+
+secure
+
+scalable
+
+hardware-aware
+
+RFID-aware
+
+multilingual
+
+professional
+
+visually premium
+
+simple for students
+
+powerful for administrators
+
+253. MOST IMPORTANT PRODUCT PRINCIPLE
+
+There are TWO completely different experiences.
+
+STUDENT
+
+Extremely simple:
+
+SCAN CARD
+
+↓
+
+BORROW / RETURN
+
+↓
+
+SCAN BOOKS
+
+↓
+
+CONFIRM
+
+↓
+
+DONE
+
+ADMINISTRATOR
+
+Extremely powerful:
+
+Dashboard
+
+Members
+
+Cards
+
+Books
+
+Copies
+
+RFID
+
+Loans
+
+Returns
+
+Inventory
+
+Libraries
+
+Reports
+
+Fines
+
+Users
+
+Security
+
+Audit
+
+Backups
+
+Diagnostics
+
+Do NOT mix the complexity of the administrator into the student experience.
+
+254. FINAL DEVELOPMENT INSTRUCTION TO THE AI AGENT
+
+Now actually implement the system.
+
+Do not only describe the architecture.
+
+Do not stop at UI mockups.
+
+Do not generate placeholder buttons for core functionality.
+
+Do not create fake RFID integration.
+
+Do not invent vendor SDK APIs.
+
+Do not silently assume hardware capabilities.
+
+Inspect the actual U1-CU-71 Reader SDK 20240912 files and integrate according to the real API.
+
+If a required SDK function is unavailable:
+
+Detect the limitation.
+
+Document it.
+
+Create the best supported implementation.
+
+Keep the hardware abstraction clean.
+
+Do not pretend unsupported functionality works.
+
+Build the product in incremental working phases.
+
+After each major phase:
+
+compile
+
+run
+
+test
+
+fix
+
+verify
+
+continue
+
+When a hardware operation fails, show the real underlying diagnostic to the administrator while presenting a human-readable message to normal users.
+
+Maintain clean architecture.
+
+Maintain clean database migrations.
+
+Maintain reusable components.
+
+Maintain localization.
+
+Maintain auditability.
+
+Maintain data integrity.
+
+Most importantly:
+
+Build a real RFID library system, not a dashboard that merely looks like one.
+
+The final application should be something a university, school, training center, public library, or private educational institution could actually deploy with the U1-CU-71 reader and RFID-tagged books.
+
+255. EXPECTED FINAL OUTPUT FROM YOU
+
+At completion, provide:
+
+A. Implemented features
+
+A clear list of everything actually implemented.
+
+B. RFID integration
+
+Explain:
+
+which SDK files were used
+
+which DLLs were loaded
+
+architecture
+
+connection method
+
+read method
+
+write method
+
+verification method
+
+multi-tag method
+
+fallback method
+
+device limitations
+
+C. Database
+
+Provide:
+
+schema
+
+migrations
+
+important indexes
+
+relationships
+
+D. Authentication
+
+Provide:
+
+roles
+
+permissions
+
+security implementation
+
+session behavior
+
+E. Testing
+
+Report:
+
+unit tests
+
+integration tests
+
+RFID hardware tests
+
+failure tests
+
+performance tests
+
+F. Setup
+
+Provide exact:
+
+Installation steps
+
+SDK placement
+
+DLL requirements
+
+Driver requirements if actually necessary
+
+Database setup
+
+Admin creation
+
+RFID configuration
+
+First card setup
+
+First book setup
+
+G. Known limitations
+
+Be honest.
+
+If something could not be tested because the physical U1-CU-71 or a required SDK binary is unavailable, explicitly state:
+
+NOT HARDWARE VERIFIED
+
+Do NOT say:
+
+RFID fully working
+
+unless it was actually tested.
+
+256. DEFINITION OF DONE
+
+The project is complete only when this complete real-world scenario works:
+
+Scenario
+
+Launch application.
+
+Student kiosk opens.
+
+Admin access is hidden.
+
+Admin opens protected login.
+
+Admin creates library.
+
+Admin creates member.
+
+Admin scans RFID card.
+
+Card is written/assigned where supported.
+
+Card is verified.
+
+Admin creates a book.
+
+Admin creates a physical copy.
+
+Admin places RFID label on U1-CU-71.
+
+System detects tag.
+
+System writes tag where configured/supported.
+
+System reads tag back.
+
+System verifies it.
+
+RFID is associated with copy.
+
+Student approaches kiosk.
+
+Student scans card.
+
+Student is authenticated.
+
+Student chooses Borrow.
+
+Student places one or more books near reader.
+
+RFID reader detects them.
+
+System deduplicates tags.
+
+System identifies copies.
+
+System validates availability.
+
+System validates student permissions.
+
+Student confirms.
+
+Loan transaction is created.
+
+Copies become Borrowed.
+
+Student sees success.
+
+Student session resets.
+
+Student returns later.
+
+Student scans card.
+
+Chooses Return.
+
+Places books near reader.
+
+System detects books.
+
+Finds corresponding loans.
+
+Calculates overdue status.
+
+Creates fines according to configuration.
+
+Student confirms.
+
+Books become Available.
+
+Loan records become Returned.
+
+Full history remains available.
+
+Admin can view the entire history.
+
+Admin can run reports.
+
+Admin can perform RFID inventory.
+
+Admin can identify missing books.
+
+Admin can identify unknown RFID tags.
+
+Admin can replace a lost RFID card.
+
+Admin can replace a damaged book RFID tag.
+
+Every important hardware and administrative action is audited.
+
+That is the target.
+
+Build it as a serious production application.
+
+Do not optimize for "number of screens".
+
+Optimize for:
+
+simplicity + speed + reliability + RFID correctness + excellent UX + maintainability.

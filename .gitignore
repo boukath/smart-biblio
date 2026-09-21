@@ -1,0 +1,18 @@
+# Flutter / Dart build artifacts
+smart_biblio/build/
+smart_biblio/.dart_tool/
+smart_biblio/.pub-cache/
+smart_biblio/.pub/
+smart_biblio/.flutter-plugins-dependencies
+
+# IDE / System files
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak

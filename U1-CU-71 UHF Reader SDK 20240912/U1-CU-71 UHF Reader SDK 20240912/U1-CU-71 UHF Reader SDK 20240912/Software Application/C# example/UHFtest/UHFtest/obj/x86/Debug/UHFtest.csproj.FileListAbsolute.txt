@@ -1,0 +1,24 @@
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\bin\x86\Debug\UHFtest.exe
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\bin\x86\Debug\UHFtest.pdb
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.Form1.resources
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.Properties.Resources.resources
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.csproj.GenerateResource.Cache
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.exe
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.pdb
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.exe
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.pdb
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\bin\x86\Debug\UHFtest.exe
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\bin\x86\Debug\UHFtest.pdb
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.Form1.resources
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.Properties.Resources.resources
+C:\Users\Administrator\Desktop\开发包\台湾超高频读写器更新文件\兼容动态库\UHF example\C#\UHFtest\UHFtest\obj\x86\Debug\UHFtest.csproj.GenerateResource.Cache
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\obj\x86\Debug\UHFtest.exe
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\obj\x86\Debug\UHFtest.pdb
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\obj\x86\Debug\UHFtest.Form1.resources
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\obj\x86\Debug\UHFtest.Properties.Resources.resources
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\obj\x86\Debug\UHFtest.csproj.GenerateResource.Cache
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\bin\x86\Debug\UHFtest.exe
+C:\Users\Administrator\Desktop\tmp\C# example\UHFtest\UHFtest\bin\x86\Debug\UHFtest.pdb
