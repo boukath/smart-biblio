@@ -39,6 +39,10 @@ class Win32Window {
   // Show the current window. Returns true if the window was successfully shown.
   bool Show();
 
+  // Fullscreen support for kiosk mode
+  void SetFullScreen(bool fullscreen);
+  bool IsFullScreen() const { return is_fullscreen_; }
+
   // Release OS resources associated with window.
   void Destroy();
 
@@ -91,6 +95,10 @@ class Win32Window {
   static void UpdateTheme(HWND const window);
 
   bool quit_on_close_ = false;
+
+  // Fullscreen state
+  bool is_fullscreen_ = false;
+  WINDOWPLACEMENT saved_placement_ = { sizeof(WINDOWPLACEMENT) };
 
   // window handle for top level window.
   HWND window_handle_ = nullptr;

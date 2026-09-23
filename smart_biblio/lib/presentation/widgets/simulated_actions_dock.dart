@@ -116,6 +116,7 @@ class _SimulatedActionsDockState extends State<SimulatedActionsDock> {
                     icon: Icons.person_rounded,
                     color: AppColors.primary,
                     onPressed: () {
+                      kiosk.rfid.simulateTagScan(['E28068940000501234567890']);
                       kiosk.handleCardTapped('E28068940000501234567890');
                     },
                   ),
@@ -125,6 +126,7 @@ class _SimulatedActionsDockState extends State<SimulatedActionsDock> {
                     icon: Icons.person_rounded,
                     color: AppColors.secondary,
                     onPressed: () {
+                      kiosk.rfid.simulateTagScan(['CARD00000000000000000002']);
                       kiosk.handleCardTapped('CARD00000000000000000002');
                     },
                   ),
@@ -134,7 +136,18 @@ class _SimulatedActionsDockState extends State<SimulatedActionsDock> {
                     icon: Icons.person_off_rounded,
                     color: AppColors.warning,
                     onPressed: () {
+                      kiosk.rfid.simulateTagScan(['CARD00000000000000000004']);
                       kiosk.handleCardTapped('CARD00000000000000000004');
+                    },
+                  ),
+
+                  _SimButton(
+                    label: 'Empty Card (0000...)',
+                    icon: Icons.credit_card_off_rounded,
+                    color: Colors.cyan,
+                    onPressed: () {
+                      kiosk.rfid.simulateTagScan(['000000000000000000000000']);
+                      kiosk.handleCardTapped('000000000000000000000000');
                     },
                   ),
 

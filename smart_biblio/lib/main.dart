@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/theme/app_theme.dart';
 import 'data/database/app_database.dart';
-import 'data/database/seed_data.dart';
 import 'domain/rfid/rfid_manager.dart';
 import 'domain/services/circulation_service.dart';
 import 'presentation/providers/kiosk_provider.dart';
+import 'presentation/providers/locale_provider.dart';
 import 'presentation/screens/admin/admin_login_dialog.dart';
 import 'presentation/screens/admin/admin_screen.dart';
 import 'presentation/screens/kiosk/kiosk_screen.dart';
@@ -18,9 +18,8 @@ void main() async {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
-  // Initialize database and populate seed data if empty
+  // Initialize database
   final db = AppDatabase();
-  await SeedData.populateIfEmpty(db);
 
   // Initialize RFID manager and attempt auto-connect
   final rfidManager = RfidManager();
@@ -34,6 +33,7 @@ void main() async {
         Provider<AppDatabase>.value(value: db),
         Provider<RfidManager>.value(value: rfidManager),
         Provider<CirculationService>.value(value: circulationService),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(
           create: (_) => KioskProvider(
             db: db,

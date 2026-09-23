@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../providers/kiosk_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../widgets/rfid_radar_animation.dart';
 
 class IdleWelcomeView extends StatelessWidget {
@@ -7,13 +10,17 @@ class IdleWelcomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>();
+    final kiosk = Provider.of<KioskProvider?>(context);
+    final cardErrorMessage = kiosk?.cardErrorMessage;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Welcome Header
+            // Welcome Header Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -21,14 +28,14 @@ class IdleWelcomeView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.contactless_rounded, color: AppColors.primary, size: 16),
-                  SizedBox(width: 8),
+                  const Icon(Icons.contactless_rounded, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
                   Text(
-                    'CONTACTLESS SMART BIBLIO KIOSK',
-                    style: TextStyle(
+                    locale.t('kiosk_badge'),
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -38,12 +45,12 @@ class IdleWelcomeView extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            const Text(
-              'Welcome to the University Library',
+            Text(
+              locale.t('welcome_title'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 34,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -51,19 +58,87 @@ class IdleWelcomeView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Please place or tap your Student RFID Card near the reader to begin.',
+            Text(
+              locale.t('welcome_subtitle'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
+
+            // Prominent Language Switcher on First Screen
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildLangChoiceChip(
+                    context: context,
+                    flag: '🇫🇷',
+                    title: 'Français',
+                    isSelected: locale.isFrench,
+                    onTap: () => locale.setLanguage('fr'),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildLangChoiceChip(
+                    context: context,
+                    flag: '🇬🇧',
+                    title: 'English',
+                    isSelected: locale.isEnglish,
+                    onTap: () => locale.setLanguage('en'),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 36),
 
             // Pulsing Radar Wave
-            const RfidRadarAnimation(size: 260),
+            RfidRadarAnimation(size: 260, label: locale.t('radar_scan_card')),
+
+            if (cardErrorMessage != null) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.danger.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 20),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        locale.t(cardErrorMessage),
+                        style: const TextStyle(
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.danger),
+                      onPressed: kiosk?.clearCardError,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             const SizedBox(height: 48),
 
@@ -74,12 +149,57 @@ class IdleWelcomeView extends StatelessWidget {
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                _buildStepPill('1', 'Tap Student Card', Icons.credit_card_rounded),
+                _buildStepPill('1', locale.t('step1'), Icons.credit_card_rounded),
                 _buildStepArrow(),
-                _buildStepPill('2', 'Select Borrow or Return', Icons.touch_app_rounded),
+                _buildStepPill('2', locale.t('step2'), Icons.touch_app_rounded),
                 _buildStepArrow(),
-                _buildStepPill('3', 'Place RFID Books', Icons.auto_stories_rounded),
+                _buildStepPill('3', locale.t('step3'), Icons.auto_stories_rounded),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildLangChoiceChip({
+    required BuildContext context,
+    required String flag,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.black : AppColors.textSecondary,
+              ),
             ),
           ],
         ),

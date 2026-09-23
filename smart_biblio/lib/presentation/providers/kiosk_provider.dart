@@ -39,6 +39,7 @@ class KioskProvider extends ChangeNotifier {
   List<Loan> _lastProcessedLoans = [];
 
   bool _isProcessing = false;
+  String? _cardErrorMessage;
   int _timeoutSecondsRemaining = 45;
   Timer? _countdownTimer;
 
@@ -54,6 +55,7 @@ class KioskProvider extends ChangeNotifier {
   List<ReturnValidationItem> get returnItems => _returnItems;
   List<Loan> get lastProcessedLoans => _lastProcessedLoans;
   bool get isProcessing => _isProcessing;
+  String? get cardErrorMessage => _cardErrorMessage;
   int get timeoutSecondsRemaining => _timeoutSecondsRemaining;
   RfidManager get rfid => _rfid;
 
@@ -62,6 +64,11 @@ class KioskProvider extends ChangeNotifier {
   double get pendingFinesOnReturn => _returnItems
       .where((r) => r.isValid)
       .fold(0.0, (sum, item) => sum + item.fineAmount);
+
+  void clearCardError() {
+    _cardErrorMessage = null;
+    notifyListeners();
+  }
 
   void _init() {
     // Start in card scan mode
@@ -77,9 +84,9 @@ class KioskProvider extends ChangeNotifier {
     // Listen for multi-tag inventory detections
     _inventorySub = _rfid.onTagsInventory.listen((tags) {
       final epcs = tags.map((t) => t.cleanEpc).toList();
-      if (_step == KioskStep.borrowScanning && _currentStudent != null) {
+      if (_step == KioskStep.borrowScanning) {
         _handleBorrowTagsScanned(epcs);
-      } else if (_step == KioskStep.returnScanning && _currentStudent != null) {
+      } else if (_step == KioskStep.returnScanning) {
         _handleReturnTagsScanned(epcs);
       }
     });
@@ -88,11 +95,13 @@ class KioskProvider extends ChangeNotifier {
   /// Called when a card is tapped on the reader
   Future<void> handleCardTapped(String cardEpc) async {
     _isProcessing = true;
+    _cardErrorMessage = null;
     notifyListeners();
 
     try {
       final member = await _db.findMemberByCardEpc(cardEpc);
       if (member != null) {
+        _cardErrorMessage = null;
         _currentStudent = member;
         _activeStudentLoans = await _db.getActiveLoansForMember(member.id);
         _step = KioskStep.studentHome;
@@ -100,9 +109,19 @@ class KioskProvider extends ChangeNotifier {
         _rfid.setMode(RfidReaderMode.idle);
       } else {
         await _rfid.beepError();
+        _cardErrorMessage = RfidManager.isBlankOrEmptyEpc(cardEpc)
+            ? 'card_not_activated_kiosk'
+            : 'card_not_activated_kiosk';
+        Timer(const Duration(seconds: 5), () {
+          if (_cardErrorMessage != null) {
+            _cardErrorMessage = null;
+            notifyListeners();
+          }
+        });
       }
     } catch (e) {
       await _rfid.beepError();
+      _cardErrorMessage = 'card_not_activated_kiosk';
     } finally {
       _isProcessing = false;
       notifyListeners();

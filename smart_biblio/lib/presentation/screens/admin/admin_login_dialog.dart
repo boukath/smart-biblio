@@ -19,14 +19,13 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
 
   void _verifyPin() {
     final pin = _pinController.text.trim();
-    // Default master PIN is 1234 or admin
     if (pin == '1234' || pin.toLowerCase() == 'admin') {
       Navigator.of(context).pop();
       widget.onLoginSuccess();
     } else {
       setState(() {
         _hasError = true;
-        _errorMessage = 'Invalid PIN code. Default PIN is 1234';
+        _errorMessage = 'Code de sécurité incorrect.';
       });
     }
   }
@@ -72,7 +71,7 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
             const SizedBox(height: 20),
 
             const Text(
-              'Librarian & Admin Access',
+              'Accès Administration',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -81,7 +80,7 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Enter your 4-digit security PIN or tap an authorized administrative RFID card.',
+              'Entrez votre code de sécurité PIN ou passez une carte RFID autorisée.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
@@ -140,8 +139,8 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
                   const SizedBox(width: 8),
                   Text(
                     kiosk.rfid.isConnected
-                        ? 'RFID Reader Active: You can also tap admin card'
-                        : 'Default PIN for demo: 1234',
+                        ? 'Lecteur RFID actif : badge administrateur accepté'
+                        : 'Authentification sécurisée',
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ],
@@ -161,7 +160,7 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: AppColors.borderLight),
                     ),
-                    child: const Text('CANCEL'),
+                    child: const Text('ANNULER'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -177,7 +176,7 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
                       ),
                     ),
                     child: const Text(
-                      'UNLOCK',
+                      'DÉVERROUILLER',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),

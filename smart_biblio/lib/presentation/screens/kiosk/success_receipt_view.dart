@@ -45,7 +45,7 @@ class SuccessReceiptView extends StatelessWidget {
             const SizedBox(height: 20),
 
             Text(
-              isReturn ? 'BOOKS RETURNED SUCCESSFULLY!' : 'BOOKS BORROWED SUCCESSFULLY!',
+              isReturn ? 'RETOURS EFFECTUÉS AVEC SUCCÈS !' : 'EMPRUNTS EFFECTUÉS AVEC SUCCÈS !',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 26,
@@ -57,8 +57,8 @@ class SuccessReceiptView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               isReturn
-                  ? 'Your return transaction has been recorded. Thank you!'
-                  : 'Please remember to return your books before the due date.',
+                  ? 'Votre retour a bien été enregistré. Merci !'
+                  : 'Pensez à retourner vos livres avant la date d\'échéance.',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
@@ -86,7 +86,7 @@ class SuccessReceiptView extends StatelessWidget {
                   // Receipt Header
                   const Center(
                     child: Text(
-                      'SMART BIBLIO • TRANSACTION RECEIPT',
+                      'SMART BIBLIO • REÇU DE TRANSACTION',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -98,7 +98,7 @@ class SuccessReceiptView extends StatelessWidget {
                   const SizedBox(height: 4),
                   Center(
                     child: Text(
-                      DateFormat('dd MMMM yyyy  •  HH:mm:ss').format(DateTime.now()),
+                      DateFormat('dd/MM/yyyy  •  HH:mm:ss').format(DateTime.now()),
                       style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
                   ),
@@ -106,18 +106,18 @@ class SuccessReceiptView extends StatelessWidget {
                   const Divider(color: AppColors.border),
                   const SizedBox(height: 12),
 
-                  _buildReceiptRow('Borrower:', student?.fullName ?? 'N/A'),
-                  _buildReceiptRow('Student ID:', student?.studentNumber ?? 'N/A'),
-                  _buildReceiptRow('Department:', student?.gradeDepartment ?? 'N/A'),
+                  _buildReceiptRow('Emprunteur :', student?.fullName ?? 'N/D'),
+                  _buildReceiptRow('N° Étudiant :', student?.studentNumber ?? 'N/D'),
+                  _buildReceiptRow('Département :', student?.gradeDepartment ?? 'N/D'),
                   if (loans.isNotEmpty)
-                    _buildReceiptRow('Transaction No:', loans.first.transactionNo),
+                    _buildReceiptRow('N° Transaction :', loans.first.transactionNo),
 
                   const SizedBox(height: 16),
                   const Divider(color: AppColors.border),
                   const SizedBox(height: 12),
 
                   const Text(
-                    'PROCESSED ITEMS:',
+                    'ARTICLES TRAITÉS :',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -137,7 +137,7 @@ class SuccessReceiptView extends StatelessWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Copy: ${loan.copyId}',
+                              'Exemplaire : ${loan.copyId}',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -147,8 +147,8 @@ class SuccessReceiptView extends StatelessWidget {
                           ),
                           Text(
                             isReturn
-                                ? 'RETURNED'
-                                : 'Due: ${DateFormat('dd/MM/yyyy').format(loan.dueAt)}',
+                                ? 'RETOURNÉ'
+                                : 'Retour avant le : ${DateFormat('dd/MM/yyyy').format(loan.dueAt)}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -166,7 +166,7 @@ class SuccessReceiptView extends StatelessWidget {
 
                   const Center(
                     child: Text(
-                      'Thank you for using Smart Biblio Self-Service RFID Kiosk',
+                      'Merci d\'utiliser la Borne Libre-Service Smart Biblio',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textMuted,
@@ -187,7 +187,7 @@ class SuccessReceiptView extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () => kiosk.backToStudentHome(),
                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('ANOTHER TRANSACTION'),
+                  label: const Text('AUTRE TRANSACTION'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -198,7 +198,7 @@ class SuccessReceiptView extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: () => kiosk.exitSession(),
                   icon: const Icon(Icons.check_rounded, size: 18),
-                  label: const Text('FINISH & EXIT'),
+                  label: const Text('TERMINER ET QUITTER'),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.black,

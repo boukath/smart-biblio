@@ -31,7 +31,7 @@ class BorrowScanningView extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: () => kiosk.backToStudentHome(),
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('BACK'),
+                label: const Text('RETOUR'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
                   side: const BorderSide(color: AppColors.borderLight),
@@ -42,7 +42,7 @@ class BorrowScanningView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'BORROW BOOKS',
+                    'EMPRUNT DE LIVRES',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -51,7 +51,7 @@ class BorrowScanningView extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Borrower: ${student?.fullName ?? ''} (${student?.studentNumber ?? ''})',
+                    'Emprunteur : ${student?.fullName ?? ''} (${student?.studentNumber ?? ''})',
                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
@@ -70,7 +70,7 @@ class BorrowScanningView extends StatelessWidget {
                     const Icon(Icons.sensors_rounded, color: AppColors.primary, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      '${items.length} Tags Detected ($validCount Ready)',
+                      '${items.length} détecté(s) ($validCount prêt(s))',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -107,7 +107,7 @@ class BorrowScanningView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Place your RFID-tagged books on the reader pad',
+                    'Déposez vos livres RFID sur le plateau de lecture',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -116,7 +116,7 @@ class BorrowScanningView extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'You can place multiple books at the same time.\nThe system will automatically identify each copy in seconds.',
+                    'Vous pouvez poser plusieurs livres en même temps.\nLe système identifie automatiquement chaque exemplaire.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -178,7 +178,7 @@ class BorrowScanningView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              book?.title ?? 'Unknown Item (${item.epc})',
+                              book?.title ?? 'Livre inconnu (${item.epc})',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -188,12 +188,12 @@ class BorrowScanningView extends StatelessWidget {
                             const SizedBox(height: 4),
                             if (book != null)
                               Text(
-                                'Author: ${book.author}  •  ISBN: ${book.isbn}',
+                                'Auteur : ${book.author}  •  ISBN : ${book.isbn}',
                                 style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                               ),
                             const SizedBox(height: 4),
                             Text(
-                              'Copy: ${copy?.copyBarcode ?? 'N/A'}  •  EPC: ${item.epc}',
+                              'Code-barres : ${copy?.copyBarcode ?? 'N/D'}  •  EPC : ${item.epc}',
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textMuted,
@@ -246,7 +246,7 @@ class BorrowScanningView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Expected Return Due Date: ${DateFormat('dd MMMM yyyy').format(expectedDue)}',
+                    'Date d\'échéance du retour : ${DateFormat('dd/MM/yyyy').format(expectedDue)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -255,7 +255,7 @@ class BorrowScanningView extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Standard loan duration: 14 days (Renewals available online or at desk)',
+                    'Durée standard du prêt : 14 jours',
                     style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ],
@@ -268,7 +268,7 @@ class BorrowScanningView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   side: const BorderSide(color: AppColors.borderLight),
                 ),
-                child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.w700)),
+                child: const Text('ANNULER', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 16),
               FilledButton.icon(
@@ -283,7 +283,7 @@ class BorrowScanningView extends StatelessWidget {
                       )
                     : const Icon(Icons.check_rounded, size: 20),
                 label: Text(
-                  validCount > 0 ? 'CONFIRM BORROW ($validCount BOOKS)' : 'NO VALID BOOKS',
+                  validCount > 0 ? 'VALIDER L\'EMPRUNT ($validCount LIVRES)' : 'AUCUN LIVRE VALIDE',
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                 ),
                 style: FilledButton.styleFrom(

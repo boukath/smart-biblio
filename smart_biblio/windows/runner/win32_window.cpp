@@ -149,8 +149,37 @@ bool Win32Window::Create(const std::wstring& title,
   return OnCreate();
 }
 
+void Win32Window::SetFullScreen(bool fullscreen) {
+  if (fullscreen == is_fullscreen_) return;
+
+  DWORD dwStyle = GetWindowLong(window_handle_, GWL_STYLE);
+
+  if (fullscreen) {
+    MONITORINFO mi = { sizeof(mi) };
+    if (GetWindowPlacement(window_handle_, &saved_placement_) &&
+        GetMonitorInfo(MonitorFromWindow(window_handle_, MONITOR_DEFAULTTOPRIMARY), &mi)) {
+      SetWindowLong(window_handle_, GWL_STYLE, dwStyle & ~WS_OVERLAPPEDWINDOW);
+      SetWindowPos(window_handle_, HWND_TOP,
+                   mi.rcMonitor.left, mi.rcMonitor.top,
+                   mi.rcMonitor.right - mi.rcMonitor.left,
+                   mi.rcMonitor.bottom - mi.rcMonitor.top,
+                   SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+      is_fullscreen_ = true;
+    }
+  } else {
+    SetWindowLong(window_handle_, GWL_STYLE, dwStyle | WS_OVERLAPPEDWINDOW);
+    SetWindowPlacement(window_handle_, &saved_placement_);
+    SetWindowPos(window_handle_, NULL, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    is_fullscreen_ = false;
+  }
+}
+
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  bool res = ShowWindow(window_handle_, SW_SHOW);
+  SetFullScreen(true);
+  return res;
 }
 
 // static
@@ -179,6 +208,13 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_KEYDOWN:
+      if (wparam == VK_F11) {
+        SetFullScreen(!is_fullscreen_);
+        return 0;
+      }
+      break;
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();

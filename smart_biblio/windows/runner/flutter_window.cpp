@@ -27,6 +27,28 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
+  window_channel_ = std::make_unique<flutter::MethodChannel<>>(
+      flutter_controller_->engine()->messenger(), "smart_biblio/window",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  window_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<>& call,
+             std::unique_ptr<flutter::MethodResult<>> result) {
+        if (call.method_name() == "setFullScreen") {
+          const auto* args = std::get_if<bool>(call.arguments());
+          bool enable = args ? *args : true;
+          this->SetFullScreen(enable);
+          result->Success(flutter::EncodableValue(this->IsFullScreen()));
+        } else if (call.method_name() == "isFullScreen") {
+          result->Success(flutter::EncodableValue(this->IsFullScreen()));
+        } else if (call.method_name() == "toggleFullScreen") {
+          this->SetFullScreen(!this->IsFullScreen());
+          result->Success(flutter::EncodableValue(this->IsFullScreen()));
+        } else {
+          result->NotImplemented();
+        }
+      });
+
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
   });

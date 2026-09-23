@@ -6,6 +6,7 @@ import '../../../data/models/book.dart';
 import '../../../data/models/book_copy.dart';
 import '../../../domain/rfid/rfid_manager.dart';
 import '../../../domain/rfid/rfid_models.dart';
+import '../../../domain/rfid/windows_port_detector.dart';
 
 class AdminRfidCenterView extends StatefulWidget {
   const AdminRfidCenterView({super.key});
@@ -26,6 +27,8 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
   int _readMemoryLength = 8;
   String? _readMemoryResult;
   bool _isReadingMemory = false;
+  List<DetectedPort> _detectedPorts = [];
+  bool _isScanningPorts = false;
 
   // Tag Writer state
   List<Book> _catalogBooks = [];
@@ -51,6 +54,27 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
     _loadInitialData();
   }
 
+  Future<void> _scanPorts() async {
+    if (_isScanningPorts) return;
+    setState(() => _isScanningPorts = true);
+    try {
+      final ports = await WindowsPortDetector.detectAvailablePorts();
+      if (mounted) {
+        setState(() {
+          _detectedPorts = ports;
+          final rfid = context.read<RfidManager>();
+          if (rfid.currentPort != null) {
+            _selectedPort = rfid.currentPort!;
+          } else if (_detectedPorts.isNotEmpty && _selectedPort == 100) {
+            _selectedPort = _detectedPorts.first.portIndex;
+          }
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isScanningPorts = false);
+    }
+  }
+
   Future<void> _loadInitialData() async {
     final db = context.read<AppDatabase>();
     final books = await db.getAllBooks();
@@ -64,8 +88,8 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
     if (mounted) {
       setState(() {
         _catalogBooks = books;
-        _availableCopies = allCopies;
         _shelves = shelves;
+        _availableCopies = allCopies;
         if (shelves.isNotEmpty) {
           _selectedShelf = shelves.first;
           _loadShelfCopies(_selectedShelf!);
@@ -76,6 +100,8 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
         }
       });
     }
+
+    await _scanPorts();
   }
 
   Future<void> _loadShelfCopies(String shelf) async {
@@ -206,37 +232,95 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Hardware Connection & Port Configuration',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Hardware Connection & Port Configuration',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Row(
+                      children: [
+                        if (_isScanningPorts)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 8),
+                            child: SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        TextButton.icon(
+                          onPressed: _scanPorts,
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const Text('Refresh Ports'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
                     // Port Selector
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        isExpanded: true,
-                        initialValue: _selectedPort,
-                        decoration: const InputDecoration(
-                          labelText: 'Reader Port',
-                          filled: true,
-                          fillColor: AppColors.surface,
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 100, child: Text('USB Port (100 - Default)')),
-                          DropdownMenuItem(value: 0, child: Text('Serial COM1 (Port 0)')),
-                          DropdownMenuItem(value: 1, child: Text('Serial COM2 (Port 1)')),
-                          DropdownMenuItem(value: 2, child: Text('Serial COM3 (Port 2)')),
-                          DropdownMenuItem(value: 3, child: Text('Serial COM4 (Port 3)')),
-                        ],
-                        onChanged: (val) => setState(() => _selectedPort = val ?? 100),
+                      flex: 3,
+                      child: Builder(
+                        builder: (ctx) {
+                          final menuMap = <int, String>{};
+                          // Add detected ports
+                          for (final dp in _detectedPorts) {
+                            menuMap[dp.portIndex] = dp.label;
+                          }
+                          // Fallbacks
+                          menuMap.putIfAbsent(100, () => 'USB Port (100 - Default)');
+                          menuMap.putIfAbsent(0, () => 'Serial COM1 (Port 0)');
+                          menuMap.putIfAbsent(1, () => 'Serial COM2 (Port 1)');
+                          menuMap.putIfAbsent(2, () => 'Serial COM3 (Port 2)');
+                          menuMap.putIfAbsent(3, () => 'Serial COM4 (Port 3)');
+                          menuMap.putIfAbsent(9, () => 'Serial COM10 (Port 9)');
+                          // Ensure current selected port is in map
+                          menuMap.putIfAbsent(_selectedPort, () => 'Port $_selectedPort');
+
+                          return DropdownButtonFormField<int>(
+                            isExpanded: true,
+                            initialValue: _selectedPort,
+                            decoration: const InputDecoration(
+                              labelText: 'Reader Port',
+                              filled: true,
+                              fillColor: AppColors.surface,
+                            ),
+                            items: menuMap.entries.map((e) {
+                              return DropdownMenuItem<int>(
+                                value: e.key,
+                                child: Text(
+                                  e.value,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: e.value.contains('Fongwah') || e.value.contains('Recommended')
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: e.value.contains('Fongwah')
+                                        ? AppColors.primary
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) => setState(() => _selectedPort = val ?? 100),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 16),
 
                     // Baud Rate Selector
                     Expanded(
+                      flex: 2,
                       child: DropdownButtonFormField<int>(
                         isExpanded: true,
                         initialValue: _selectedBaud,
@@ -254,7 +338,25 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
                         onChanged: (val) => setState(() => _selectedBaud = val ?? 115200),
                       ),
                     ),
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 16),
+
+                    // Auto-detect & Connect Button
+                    if (!rfid.isConnected)
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await rfid.connect(baud: _selectedBaud);
+                          await _scanPorts();
+                        },
+                        icon: const Icon(Icons.radar_rounded, size: 18),
+                        label: const Text('AUTO-DETECT'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                        ),
+                      ),
+                    if (!rfid.isConnected)
+                      const SizedBox(width: 12),
 
                     // Connect/Disconnect Button
                     FilledButton.icon(
@@ -266,10 +368,10 @@ class _AdminRfidCenterViewState extends State<AdminRfidCenterView>
                         }
                       },
                       icon: Icon(rfid.isConnected ? Icons.link_off_rounded : Icons.link_rounded),
-                      label: Text(rfid.isConnected ? 'DISCONNECT' : 'CONNECT READER'),
+                      label: Text(rfid.isConnected ? 'DISCONNECT' : 'CONNECT'),
                       style: FilledButton.styleFrom(
                         backgroundColor: rfid.isConnected ? AppColors.danger : AppColors.success,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                       ),
                     ),
                   ],

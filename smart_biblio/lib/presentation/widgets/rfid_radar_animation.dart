@@ -84,6 +84,9 @@ class _RfidRadarAnimationState extends State<RfidRadarAnimation>
 
 class _RadarWavePainter extends CustomPainter {
   final double progress;
+  final Paint _wavePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.5;
 
   _RadarWavePainter({required this.progress});
 
@@ -97,12 +100,8 @@ class _RadarWavePainter extends CustomPainter {
       final radius = 45 + (maxRadius - 45) * waveProgress;
       final opacity = math.sin(waveProgress * math.pi) * 0.45;
 
-      final wavePaint = Paint()
-        ..color = AppColors.primary.withValues(alpha: opacity.clamp(0.0, 1.0))
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5;
-
-      canvas.drawCircle(center, radius, wavePaint);
+      _wavePaint.color = AppColors.primary.withValues(alpha: opacity.clamp(0.0, 1.0));
+      canvas.drawCircle(center, radius, _wavePaint);
     }
   }
 

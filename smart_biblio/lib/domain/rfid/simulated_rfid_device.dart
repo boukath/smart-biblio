@@ -98,13 +98,17 @@ class SimulatedRfidDevice implements RfidDeviceInterface {
   }) async {
     if (!isConnected) return false;
     _mockMemory.putIfAbsent(bank, () => {})[address] = hexData;
-    // Also update any field tag with this new EPC if bank is EPC
-    if (bank == 1 && _simulatedFieldTags.isNotEmpty) {
-      final oldTag = _simulatedFieldTags.first;
-      _simulatedFieldTags[0] = RfidTag(
-        epc: hexData,
-        readCount: oldTag.readCount,
-      );
+    // Also update or add field tag with this new EPC if bank is EPC
+    if (bank == 1) {
+      if (_simulatedFieldTags.isNotEmpty) {
+        final oldTag = _simulatedFieldTags.first;
+        _simulatedFieldTags[0] = RfidTag(
+          epc: hexData,
+          readCount: oldTag.readCount,
+        );
+      } else {
+        _simulatedFieldTags.add(RfidTag(epc: hexData, readCount: 1));
+      }
     }
     await triggerAction(beep: true, greenLed: true, durationMs: 200);
     return true;

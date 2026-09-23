@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/window_service.dart';
 import '../../providers/kiosk_provider.dart';
 import '../../widgets/kiosk_top_bar.dart';
-import '../../widgets/simulated_actions_dock.dart';
 import 'borrow_scanning_view.dart';
 import 'idle_welcome_view.dart';
 import 'return_scanning_view.dart';
@@ -24,6 +24,10 @@ class KioskScreen extends StatelessWidget {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyA, control: true, shift: true):
             onOpenAdmin,
+        const SingleActivator(LogicalKeyboardKey.f11):
+            WindowService.toggleFullScreen,
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true, shift: true):
+            WindowService.toggleFullScreen,
       },
       child: Focus(
         autofocus: true,
@@ -44,9 +48,6 @@ class KioskScreen extends StatelessWidget {
                     child: _buildCurrentView(kiosk.step),
                   ),
                 ),
-
-                // Bottom Simulation Dock
-                const SimulatedActionsDock(),
               ],
             ),
           ),

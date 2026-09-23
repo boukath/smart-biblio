@@ -102,7 +102,7 @@ class StudentHomeView extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              student.status.toUpperCase(),
+                              student.isActive ? 'ACTIF' : 'SUSPENDU',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -114,7 +114,7 @@ class StudentHomeView extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${student.studentNumber}  •  ${student.gradeDepartment}',
+                        'N° Étudiant : ${student.studentNumber}  •  ${student.gradeDepartment}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,
@@ -129,7 +129,7 @@ class StudentHomeView extends StatelessWidget {
                   children: [
                     _buildStatPill(
                       icon: Icons.book_rounded,
-                      label: 'Active Loans',
+                      label: 'Emprunts en cours',
                       value: '${activeLoans.length} / ${student.maxLoans}',
                       color: activeLoans.length >= student.maxLoans
                           ? AppColors.warning
@@ -138,7 +138,7 @@ class StudentHomeView extends StatelessWidget {
                     const SizedBox(width: 16),
                     _buildStatPill(
                       icon: Icons.warning_amber_rounded,
-                      label: 'Overdue',
+                      label: 'En retard',
                       value: activeLoans.where((l) => l.isOverdue).length.toString(),
                       color: hasOverdue ? AppColors.danger : AppColors.success,
                     ),
@@ -152,7 +152,7 @@ class StudentHomeView extends StatelessWidget {
 
           // Action Heading
           const Text(
-            'What would you like to do today?',
+            'Que souhaitez-vous faire ?',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -167,17 +167,17 @@ class StudentHomeView extends StatelessWidget {
               // BORROW BOOKS CARD
               Expanded(
                 child: _ActionCard(
-                  title: 'BORROW BOOKS',
-                  subtitle: 'Place new books on the RFID reader to loan them',
+                  title: 'EMPRUNTER DES LIVRES',
+                  subtitle: 'Déposez vos livres sur le plateau RFID pour enregistrer l\'emprunt',
                   icon: Icons.file_download_outlined,
                   gradientColors: const [Color(0xFF00B4DB), Color(0xFF0083B0)],
                   accentColor: const Color(0xFF00E5FF),
                   isDisabled: !student.isActive || hasOverdue || activeLoans.length >= student.maxLoans,
                   disabledReason: !student.isActive
-                      ? 'Account suspended'
+                      ? 'Compte suspendu'
                       : hasOverdue
-                          ? 'Please return overdue books first'
-                          : 'Loan limit reached (${student.maxLoans} books)',
+                          ? 'Veuillez d\'abord retourner vos livres en retard'
+                          : 'Limite d\'emprunt atteinte (${student.maxLoans} livres)',
                   onTap: () => kiosk.startBorrowWorkflow(),
                 ),
               ),
@@ -186,8 +186,8 @@ class StudentHomeView extends StatelessWidget {
               // RETURN BOOKS CARD
               Expanded(
                 child: _ActionCard(
-                  title: 'RETURN BOOKS',
-                  subtitle: 'Place your borrowed books on the reader to return them',
+                  title: 'RETOURNER DES LIVRES',
+                  subtitle: 'Déposez vos livres empruntés sur le plateau pour valider le retour',
                   icon: Icons.file_upload_outlined,
                   gradientColors: const [Color(0xFF7F00FF), Color(0xFFE100FF)],
                   accentColor: const Color(0xFFD946EF),
@@ -203,7 +203,7 @@ class StudentHomeView extends StatelessWidget {
           // Active Loans Preview
           if (activeLoans.isNotEmpty) ...[
             const Text(
-              'Your Currently Borrowed Books',
+              'Vos Livres Actuellement Empruntés',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -251,7 +251,7 @@ class StudentHomeView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Loan ${loan.transactionNo}',
+                              'Prêt n° ${loan.transactionNo}',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -260,7 +260,7 @@ class StudentHomeView extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'RFID EPC: ${loan.rfidEpc}',
+                              'Étiquette RFID : ${loan.rfidEpc}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textMuted,
@@ -275,8 +275,8 @@ class StudentHomeView extends StatelessWidget {
                         children: [
                           Text(
                             isOverdue
-                                ? 'OVERDUE'
-                                : 'Due: ${DateFormat('dd/MM/yyyy').format(loan.dueAt)}',
+                                ? 'EN RETARD'
+                                : 'À retourner avant le : ${DateFormat('dd/MM/yyyy').format(loan.dueAt)}',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -285,7 +285,7 @@ class StudentHomeView extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Borrowed ${DateFormat('dd MMM yyyy').format(loan.borrowedAt)}',
+                            'Emprunté le ${DateFormat('dd/MM/yyyy').format(loan.borrowedAt)}',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColors.textMuted,

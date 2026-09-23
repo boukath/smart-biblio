@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/rfid/rfid_models.dart';
 import '../providers/kiosk_provider.dart';
+import '../providers/locale_provider.dart';
 
 class KioskTopBar extends StatefulWidget {
   final VoidCallback onOpenAdmin;
@@ -36,6 +37,7 @@ class _KioskTopBarState extends State<KioskTopBar> {
   @override
   Widget build(BuildContext context) {
     final kiosk = context.watch<KioskProvider>();
+    final locale = context.watch<LocaleProvider>();
     final isStudentActive = kiosk.currentStudent != null;
 
     return Container(
@@ -80,7 +82,7 @@ class _KioskTopBarState extends State<KioskTopBar> {
                     ),
                   ),
                   Text(
-                    'UHF RFID Smart Self-Service Kiosk',
+                    locale.t('kiosk_subtitle'),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
@@ -94,7 +96,37 @@ class _KioskTopBarState extends State<KioskTopBar> {
 
           const Spacer(),
 
-          // RFID Hardware Status Pill
+          // Language Switcher (FR / EN)
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildLangButton(
+                  label: 'FR',
+                  flag: '🇫🇷',
+                  isSelected: locale.isFrench,
+                  onTap: () => locale.setLanguage('fr'),
+                ),
+                const SizedBox(width: 2),
+                _buildLangButton(
+                  label: 'EN',
+                  flag: '🇬🇧',
+                  isSelected: locale.isEnglish,
+                  onTap: () => locale.setLanguage('en'),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          // RFID Hardware Status (Icon only, clean and compact)
           StreamBuilder<RfidConnectionState>(
             stream: kiosk.rfid.onConnectionStateChanged,
             initialData: kiosk.rfid.isConnected
@@ -102,56 +134,34 @@ class _KioskTopBarState extends State<KioskTopBar> {
                 : RfidConnectionState.disconnected,
             builder: (context, snapshot) {
               final isConnected = kiosk.rfid.isConnected;
-              final isSim = kiosk.rfid.isSimulated;
+              final Color pillColor = isConnected ? AppColors.success : AppColors.danger;
 
-              Color pillColor = isConnected ? AppColors.success : AppColors.danger;
-              String pillText = isConnected
-                  ? (isSim ? 'Virtual RFID Simulator' : 'U1-CU-71 Connected')
-                  : 'RFID Disconnected';
-
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: pillColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: pillColor.withValues(alpha: 0.4),
+              return Tooltip(
+                message: isConnected ? locale.t('rfid_connected') : locale.t('rfid_disconnected'),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: pillColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: pillColor.withValues(alpha: 0.4),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: pillColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: pillColor.withValues(alpha: 0.6),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+                  child: Center(
+                    child: Icon(
+                      isConnected ? Icons.sensors_rounded : Icons.sensors_off_rounded,
+                      size: 18,
+                      color: pillColor,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      pillText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: pillColor,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
           ),
 
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
 
           // Real-time Clock
           Container(
@@ -166,7 +176,7 @@ class _KioskTopBarState extends State<KioskTopBar> {
                     size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 6),
                 Text(
-                  DateFormat('HH:mm:ss  •  E, MMM d').format(_now),
+                  DateFormat('HH:mm:ss  •  dd/MM/yyyy').format(_now),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -221,9 +231,10 @@ class _KioskTopBarState extends State<KioskTopBar> {
             FilledButton.icon(
               onPressed: kiosk.exitSession,
               icon: const Icon(Icons.logout_rounded, size: 16),
-              label: const Text('FINISH / EXIT', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+              label: Text(locale.t('exit_session'),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.danger.withValues(alpha: 0.8),
+                backgroundColor: AppColors.danger.withValues(alpha: 0.85),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -234,12 +245,56 @@ class _KioskTopBarState extends State<KioskTopBar> {
 
           // Admin Access Button
           IconButton(
-            tooltip: 'Librarian & Admin Access (Ctrl+Shift+A)',
+            tooltip: locale.t('admin_access_tooltip'),
             onPressed: widget.onOpenAdmin,
             icon: const Icon(Icons.admin_panel_settings_outlined),
             color: AppColors.textMuted,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLangButton({
+    required String label,
+    required String flag,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 11)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: isSelected ? Colors.black : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

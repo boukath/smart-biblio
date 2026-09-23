@@ -27,7 +27,7 @@ class ReturnScanningView extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: () => kiosk.backToStudentHome(),
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('BACK'),
+                label: const Text('RETOUR'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
                   side: const BorderSide(color: AppColors.borderLight),
@@ -38,7 +38,7 @@ class ReturnScanningView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'RETURN BOOKS',
+                    'RETOUR DE LIVRES',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -47,7 +47,7 @@ class ReturnScanningView extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Place the books you wish to return on the RFID antenna pad',
+                    'Déposez les livres que vous souhaitez retourner sur le plateau RFID',
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
@@ -65,7 +65,7 @@ class ReturnScanningView extends StatelessWidget {
                     const Icon(Icons.sensors_rounded, color: AppColors.secondary, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      '${items.length} Books Detected ($validCount Ready)',
+                      '${items.length} détecté(s) ($validCount prêt(s))',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -102,7 +102,7 @@ class ReturnScanningView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Place returned books near the RFID reader',
+                    'Déposez les livres sur le lecteur RFID',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -111,7 +111,7 @@ class ReturnScanningView extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'The reader will identify your active loan and verify return status automatically.',
+                    'Le lecteur identifie automatiquement votre emprunt et vérifie le statut du retour.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -175,7 +175,7 @@ class ReturnScanningView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              book?.title ?? 'Unknown Item (${item.epc})',
+                              book?.title ?? 'Livre inconnu (${item.epc})',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -185,12 +185,12 @@ class ReturnScanningView extends StatelessWidget {
                             const SizedBox(height: 4),
                             if (book != null)
                               Text(
-                                'Author: ${book.author}',
+                                'Auteur : ${book.author}',
                                 style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                               ),
                             const SizedBox(height: 4),
                             Text(
-                              'Copy: ${copy?.copyBarcode ?? 'N/A'}  •  EPC: ${item.epc}',
+                              'Code-barres : ${copy?.copyBarcode ?? 'N/D'}  •  EPC : ${item.epc}',
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textMuted,
@@ -223,7 +223,7 @@ class ReturnScanningView extends StatelessWidget {
                           if (item.isOverdue && item.fineAmount > 0) ...[
                             const SizedBox(height: 6),
                             Text(
-                              'Fine: ${item.fineAmount.toStringAsFixed(0)} DZD',
+                              'Pénalité : ${item.fineAmount.toStringAsFixed(0)} DZD',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -262,7 +262,7 @@ class ReturnScanningView extends StatelessWidget {
                       const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        'Total Overdue Fine: ${totalFines.toStringAsFixed(0)} DZD',
+                        'Pénalité de retard : ${totalFines.toStringAsFixed(0)} DZD',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -274,7 +274,7 @@ class ReturnScanningView extends StatelessWidget {
                 )
               else
                 const Text(
-                  'No overdue fines assessed.',
+                  'Aucune pénalité de retard.',
                   style: TextStyle(fontSize: 13, color: AppColors.textMuted),
                 ),
               const Spacer(),
@@ -285,7 +285,7 @@ class ReturnScanningView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   side: const BorderSide(color: AppColors.borderLight),
                 ),
-                child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.w700)),
+                child: const Text('ANNULER', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 16),
               FilledButton.icon(
@@ -300,7 +300,7 @@ class ReturnScanningView extends StatelessWidget {
                       )
                     : const Icon(Icons.check_rounded, size: 20),
                 label: Text(
-                  validCount > 0 ? 'CONFIRM RETURN ($validCount BOOKS)' : 'NO VALID BOOKS',
+                  validCount > 0 ? 'VALIDER LE RETOUR ($validCount LIVRES)' : 'AUCUN LIVRE VALIDE',
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                 ),
                 style: FilledButton.styleFrom(

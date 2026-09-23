@@ -55,8 +55,30 @@ class AppDatabase {
         onCreate: (db, version) async {
           await _createTables(db);
         },
+        onOpen: (db) async {
+          await _ensureSchemaColumns(db);
+        },
       ),
     );
+  }
+
+  Future<void> _ensureSchemaColumns(Database db) async {
+    final newColumns = [
+      'ALTER TABLE books ADD COLUMN subtitle TEXT;',
+      'ALTER TABLE books ADD COLUMN call_number TEXT;',
+      'ALTER TABLE books ADD COLUMN edition TEXT;',
+      'ALTER TABLE books ADD COLUMN language TEXT NOT NULL DEFAULT "English";',
+      'ALTER TABLE books ADD COLUMN page_count INTEGER NOT NULL DEFAULT 0;',
+      'ALTER TABLE books ADD COLUMN format TEXT NOT NULL DEFAULT "Paperback";',
+    ];
+
+    for (final sql in newColumns) {
+      try {
+        await db.execute(sql);
+      } catch (_) {
+        // Column already exists in schema
+      }
+    }
   }
 
   Future<void> _createTables(Database db) async {
@@ -147,6 +169,33 @@ class AppDatabase {
     return RfidCardRecord.fromMap(results.first);
   }
 
+  Future<RfidCardRecord?> getActiveCardForMember(String memberId) async {
+    final db = await database;
+    final results = await db.query(
+      'rfid_cards',
+      where: 'member_id = ? AND status = ?',
+      whereArgs: [memberId, 'active'],
+      limit: 1,
+    );
+    if (results.isEmpty) return null;
+    return RfidCardRecord.fromMap(results.first);
+  }
+
+  Future<Map<String, String>> getAllActiveMemberCards() async {
+    final db = await database;
+    final results = await db.query(
+      'rfid_cards',
+      columns: ['member_id', 'epc'],
+      where: 'status = ?',
+      whereArgs: ['active'],
+    );
+    final map = <String, String>{};
+    for (final row in results) {
+      map[row['member_id'] as String] = row['epc'] as String;
+    }
+    return map;
+  }
+
   Future<void> assignCardToMember({
     required String memberId,
     required String epc,
@@ -186,6 +235,20 @@ class AppDatabase {
         'entity_id': card.id,
         'details': 'Assigned card EPC $clean to member $memberId',
       });
+    });
+  }
+
+  /// Wipes all tables (books, copies, members, cards, loans, fines, audit logs) for a clean production setup.
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('fines');
+      await txn.delete('loans');
+      await txn.delete('book_copies');
+      await txn.delete('books');
+      await txn.delete('rfid_cards');
+      await txn.delete('members');
+      await txn.delete('audit_logs');
     });
   }
 
@@ -626,12 +689,51 @@ class AppDatabase {
 
   Future<void> deleteMember(String id) async {
     final db = await database;
-    await db.delete('members', where: 'id = ?', whereArgs: [id]);
+    final activeLoans = await getActiveLoansForMember(id);
+    if (activeLoans.isNotEmpty) {
+      throw StateError('Cannot delete member with active unreturned loans.');
+    }
+    await db.transaction((txn) async {
+      await txn.delete('rfid_cards', where: 'member_id = ?', whereArgs: [id]);
+      await txn.delete('fines', where: 'member_id = ?', whereArgs: [id]);
+      await txn.delete('loans', where: 'member_id = ?', whereArgs: [id]);
+      await txn.delete('members', where: 'id = ?', whereArgs: [id]);
+      await txn.insert('audit_logs', {
+        'id': _uuid.v4(),
+        'action': 'DELETE_MEMBER',
+        'actor_type': 'admin',
+        'actor_id': 'ADMIN',
+        'entity_type': 'member',
+        'entity_id': id,
+        'timestamp': DateTime.now().toIso8601String(),
+        'details': 'Deleted member $id and associated RFID cards',
+      });
+    });
   }
 
   Future<void> deleteBook(String id) async {
     final db = await database;
-    await db.delete('books', where: 'id = ?', whereArgs: [id]);
+    final copies = await getCopiesForBook(id);
+    for (final copy in copies) {
+      final activeLoan = await getActiveLoanForCopy(copy.id);
+      if (activeLoan != null) {
+        throw StateError('Cannot delete book: copy ${copy.copyBarcode} is currently on loan.');
+      }
+    }
+    await db.transaction((txn) async {
+      await txn.delete('book_copies', where: 'book_id = ?', whereArgs: [id]);
+      await txn.delete('books', where: 'id = ?', whereArgs: [id]);
+      await txn.insert('audit_logs', {
+        'id': _uuid.v4(),
+        'action': 'DELETE_BOOK',
+        'actor_type': 'admin',
+        'actor_id': 'ADMIN',
+        'entity_type': 'book',
+        'entity_id': id,
+        'timestamp': DateTime.now().toIso8601String(),
+        'details': 'Deleted book $id and ${copies.length} physical copies',
+      });
+    });
   }
 
   /// Filtered audit log query for compliance and admin oversight
